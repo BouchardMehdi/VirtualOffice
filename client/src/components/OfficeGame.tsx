@@ -2,11 +2,15 @@ import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 're
 import { useAuth } from '../auth/AuthProvider';
 import { tokenStorage } from '../services/auth';
 import type { NetworkStatus } from '../game/network/OfficeConnection';
+import type { ChatRequest, ChatResult, ChatState } from '../../../server/src/realtime/protocol';
+import { ChatPanel } from './ChatPanel';
 
 export function OfficeGame({ playerName }: { playerName: string }) {
   const { signOut } = useAuth();
   const [network, setNetwork] = useState<NetworkStatus>('connecting');
   const [presence, setPresence] = useState(0);
+  const [conversation, setConversation] = useState<ChatState>(null);
+  const game = useRef<{ destroy: () => void; sendChat: (request: ChatRequest) => Promise<ChatResult> } | undefined>(undefined);
   const office = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const fullscreenPending = useRef(false);
@@ -61,11 +65,12 @@ export function OfficeGame({ playerName }: { playerName: string }) {
     mount.className = 'office-game__surface';
     container.appendChild(mount);
     let active = true;
-    let instance: { destroy: () => void } | undefined;
+    let instance: typeof game.current;
     setStatus('loading');
     setError('');
     setNetwork('connecting');
     setPresence(0);
+    setConversation(null);
 
     import('../game/createOfficeGame').then(({ createOfficeGame }) => {
       if (!active) return;
@@ -77,13 +82,15 @@ export function OfficeGame({ playerName }: { playerName: string }) {
         onError: (message) => { if (active) { setError(message); setStatus('error'); } },
         onNetwork: value => { if (active) setNetwork(value); },
         onPresence: total => { if (active) setPresence(total); },
+        onChat: value => { if (active) setConversation(value); },
         onSessionExpired: () => { if (active) signOut('Ta session a expiré ou est invalide. Reconnecte-toi.'); },
       });
+      game.current = instance;
     }).catch(() => {
       if (active) { setError('Impossible de démarrer le bureau. Réessaie dans un instant.'); setStatus('error'); }
     });
 
-    return () => { active = false; instance?.destroy(); mount.remove(); };
+    return () => { active = false; instance?.destroy(); if (game.current === instance) game.current = undefined; mount.remove(); };
   }, [playerName, attempt, signOut]);
 
   return <section className="office" aria-label="Bureau interactif" ref={office} onKeyDown={onFullscreenKey}>
@@ -102,6 +109,7 @@ export function OfficeGame({ playerName }: { playerName: string }) {
       </div>
     </div>
     {fullscreenError && <p className="office-fullscreen-error" role="alert">{fullscreenError}</p>}
+    <div className="office-body">
     <div className="office-game" ref={host}>
       {status !== 'ready' && <div className="office-game__overlay">
         {status === 'loading' ? <p role="status">Chargement du bureau…</p> : <>
@@ -109,6 +117,9 @@ export function OfficeGame({ playerName }: { playerName: string }) {
           <button onClick={() => setAttempt((value) => value + 1)}>Réessayer</button>
         </>}
       </div>}
+    </div>
+    <ChatPanel key={conversation?.id ?? 'no-conversation'} conversation={conversation} online={network === 'online'}
+      send={request => game.current?.sendChat(request) ?? Promise.resolve({ ok: false, error: 'Le bureau est déconnecté.' })} />
     </div>
     <p id="office-controls" className="office-controls">
       Clique dans le bureau, puis utilise <strong>ZQSD</strong> ou <strong>les flèches</strong> pour te déplacer.

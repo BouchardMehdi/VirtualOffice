@@ -5,6 +5,7 @@ import { env } from '../config/env.js';
 import { prisma } from '../services/prisma.js';
 import { chooseSpawn, clearPath, PLAYER_SPEED } from './map.js';
 import type { ClientEvents, Presence, ServerEvents } from './protocol.js';
+import { ProximityChat } from './chat.js';
 
 type SocketData = { userId: string; name: string; expiresAt: number };
 type Player = { presence: Presence; credit: number; lastMove: number; lastPacket: number };
@@ -20,9 +21,11 @@ export function attachOffice(server: HttpServer) {
     pingInterval: 5_000, pingTimeout: 5_000,
   });
   const players = new Map<string, Player>();
+  const chat = new ProximityChat((id, state) => io.to(id).emit('chat:state', state));
+  const updateChat = () => chat.update([...players.values()].map(player => player.presence));
   let dirty = false;
   const publish = () => { io.emit('office:state', [...players.values()].map(player => player.presence)); dirty = false; };
-  const timer = setInterval(() => { if (dirty) publish(); }, 100);
+  const timer = setInterval(() => { if (dirty) publish(); updateChat(); }, 100);
   timer.unref();
   server.once('close', () => clearInterval(timer));
 
@@ -48,6 +51,7 @@ export function attachOffice(server: HttpServer) {
     players.set(socket.id, player);
     socket.emit('office:welcome', presence);
     publish();
+    updateChat();
     const expire = () => { socket.emit('session:expired'); socket.disconnect(true); };
     const expiry = setTimeout(expire, Math.max(0, socket.data.expiresAt - Date.now()));
     expiry.unref();
@@ -71,7 +75,13 @@ export function attachOffice(server: HttpServer) {
       player.credit = Math.max(0, player.credit - distance);
       if (distance > 0) { presence.x = next.x; presence.y = next.y; dirty = true; }
     });
-    socket.on('disconnect', () => { clearTimeout(expiry); players.delete(socket.id); publish(); });
+    socket.on('chat:send', (request: unknown, reply) => {
+      if (typeof reply !== 'function') return;
+      if (Date.now() >= socket.data.expiresAt) { reply({ ok: false, error: 'Session expirée.' }); expire(); return; }
+      updateChat(); // Vérifie les positions actuelles, même avant la prochaine diffusion.
+      reply(chat.send(socket.id, request));
+    });
+    socket.on('disconnect', () => { clearTimeout(expiry); players.delete(socket.id); publish(); updateChat(); });
   });
   return io;
 }

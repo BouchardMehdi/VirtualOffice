@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import type { Position } from './protocol.js';
 
 type Rectangle = Position & { width: number; height: number; rotation?: number };
-type MapObject = Rectangle & { name: string; point?: boolean };
+type MapObject = Rectangle & { name: string; point?: boolean; properties?: Array<{ name: string; value: unknown }> };
 type OfficeMap = { width: number; height: number; tilewidth: number; tileheight: number;
   layers: Array<{ name: string; objects?: MapObject[] }> };
 
@@ -20,6 +20,30 @@ if (!obstacles?.length || !spawn || !Number.isFinite(width) || !Number.isFinite(
 }
 export const spawnPosition: Position = { x: spawn.x, y: spawn.y };
 const collisionRectangles = obstacles;
+const chatWalls = obstacles.filter(object => object.name === 'wall' ||
+  object.properties?.some(property => property.name === 'blocksChat' && property.value === true));
+
+// Intersection segment/rectangle : les meubles ne coupent pas la conversation.
+export function canHear(from: Position, to: Position) {
+  return !chatWalls.some(rect => {
+    let start = 0;
+    let end = 1;
+    for (const [origin, delta, min, max] of [
+      [from.x, to.x - from.x, rect.x, rect.x + rect.width],
+      [from.y, to.y - from.y, rect.y, rect.y + rect.height],
+    ]) {
+      if (delta === 0) { if (origin < min || origin > max) return false; }
+      else {
+        const a = (min - origin) / delta;
+        const b = (max - origin) / delta;
+        start = Math.max(start, Math.min(a, b));
+        end = Math.min(end, Math.max(a, b));
+        if (start > end) return false;
+      }
+    }
+    return true;
+  });
+}
 
 export function walkable(point: Position) {
   if (!Number.isFinite(point.x) || !Number.isFinite(point.y) || point.x < PLAYER_RADIUS || point.y < PLAYER_RADIUS ||

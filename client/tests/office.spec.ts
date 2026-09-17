@@ -10,7 +10,8 @@ async function signIn(page: Page, account = 'alice') {
 }
 
 async function ready(page: Page) {
-  await expect(page.getByRole('application')).toBeVisible();
+  await page.bringToFront();
+  await expect(page.getByRole('application')).toBeVisible({ timeout: 30_000 });
   await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.snapshot())).toBeTruthy();
   await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.network().online)).toBe(true);
   await page.locator('canvas').click();
@@ -172,6 +173,7 @@ test('deux comptes se voient, bougent, se reconnectent et quittent sans fantôme
     await expect.poll(async () => (await others(alice)).length).toBe(1);
     await thomasContext.setOffline(true);
     await expect(thomas.locator('.office-presence')).toContainText('reconnexion', { timeout: 15_000 });
+    await expect(thomas.getByLabel('Message au groupe')).toBeDisabled();
     await expect.poll(async () => (await others(alice)).length, { timeout: 15_000 }).toBe(0);
     await thomasContext.setOffline(false);
     await expect.poll(() => thomas.evaluate(() => window.__virtualofficeTest?.network().online), { timeout: 15_000 }).toBe(true);
@@ -180,4 +182,62 @@ test('deux comptes se voient, bougent, se reconnectent et quittent sans fantôme
     await expect.poll(async () => (await others(alice)).length).toBe(0);
     await expect(alice.locator('.office-presence')).toHaveText('1 connecté');
   } finally { await aliceContext.close(); await thomasContext.close(); }
+});
+
+test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et plein écran', async ({ browser }, testInfo) => {
+  test.setTimeout(90_000);
+  const contexts = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()]);
+  const [alice, thomas, julie] = await Promise.all(contexts.map(context => context.newPage()));
+  const messages = (page: Page) => page.getByRole('log', { name: 'Messages du groupe' });
+  try {
+    await signIn(alice);
+    await ready(alice);
+    await expect(alice.getByLabel('Message au groupe')).toBeDisabled();
+    await signIn(thomas, 'thomas');
+    await ready(thomas);
+    await expect(alice.locator('.chat-members')).toContainText('2 participants');
+    const before = await snapshot(alice);
+    await alice.getByLabel('Message au groupe').fill('Bonjour Thomas ! ');
+    await alice.getByLabel('Message au groupe').pressSequentially('zqsd f');
+    await alice.getByLabel('Message au groupe').press('ArrowLeft');
+    expect((await snapshot(alice)).x).toBe(before.x);
+    expect((await snapshot(alice)).y).toBe(before.y);
+    expect(await alice.evaluate(() => document.fullscreenElement === null)).toBe(true);
+    await alice.getByLabel('Message au groupe').press('Enter');
+    await expect(messages(thomas)).toContainText('Bonjour Thomas ! zqsd f');
+    await expect(alice.getByLabel('Message au groupe')).toHaveValue('');
+    await expect(alice.getByLabel('Message au groupe')).toBeFocused();
+    await thomas.getByLabel('Message au groupe').fill('<b>Texte sans HTML</b>');
+    await thomas.getByRole('button', { name: 'Envoyer', exact: true }).click();
+    await expect(messages(alice)).toContainText('<b>Texte sans HTML</b>');
+    await expect(messages(alice).locator('b')).toHaveCount(0);
+    await thomas.locator('canvas').click();
+    await travel(thomas, 's', state => state.y >= 490);
+    await expect(alice.getByLabel('Message au groupe')).toBeDisabled();
+    await expect(messages(alice)).not.toContainText('Bonjour Thomas');
+    await travel(thomas, 'z', state => state.y <= 360);
+    await expect(alice.getByLabel('Message au groupe')).toBeEnabled();
+    await expect(messages(alice)).toContainText('Bonjour Thomas');
+    await signIn(julie, 'julie');
+    await ready(julie);
+    await expect(alice.locator('.chat-members')).toContainText('3 participants');
+    await expect(messages(julie)).not.toContainText('Bonjour Thomas');
+    await julie.getByLabel('Message au groupe').fill('Bonjour à vous deux !');
+    await julie.getByLabel('Message au groupe').press('Enter');
+    await expect(messages(alice)).toContainText('Bonjour à vous deux !');
+    await expect(messages(thomas)).toContainText('Bonjour à vous deux !');
+    await alice.getByRole('button', { name: 'Plein écran', exact: true }).click();
+    await expect.poll(() => alice.evaluate(() => document.fullscreenElement?.className)).toBe('office');
+    await expect(alice.getByLabel('Message au groupe')).toBeVisible();
+    await alice.getByLabel('Message au groupe').press('f');
+    await expect(alice.getByLabel('Message au groupe')).toHaveValue('f');
+    expect(await alice.evaluate(() => document.fullscreenElement?.className)).toBe('office');
+    await alice.getByLabel('Message au groupe').fill('');
+    await alice.screenshot({ path: testInfo.outputPath('chat-plein-ecran.png') });
+    await alice.getByRole('button', { name: 'Quitter le plein écran' }).click();
+    await julie.getByRole('button', { name: 'Se déconnecter' }).click();
+    await expect(alice.locator('.chat-members')).toContainText('2 participants');
+    await expect(messages(alice)).toContainText('Bonjour Thomas');
+    await expect(messages(alice)).not.toContainText('Bonjour à vous deux');
+  } finally { for (const context of contexts) await context.close(); }
 });

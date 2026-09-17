@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { OFFICE, type OfficeCallbacks, type PlayerSnapshot } from './config/office';
 import { OfficeScene } from './scenes/OfficeScene';
+import type { ChatRequest } from '../../../server/src/realtime/protocol';
 
 declare global {
   interface Window {
@@ -25,6 +26,7 @@ export function createOfficeGame(parent: HTMLElement, playerName: string, token:
   if (import.meta.env.MODE === 'test') window.__virtualofficeTest = probe;
 
   return {
+    sendChat: (request: ChatRequest) => scene.sendChat(request),
     destroy() {
       resize.disconnect();
       scene.releaseControls();

@@ -5,7 +5,7 @@ import { MovementControls } from '../input/MovementControls';
 import { buildOffice, type OfficeZone } from '../maps/buildOffice';
 import { RemotePlayer } from '../entities/RemotePlayer';
 import { OfficeConnection } from '../network/OfficeConnection';
-import type { Presence } from '../../../../server/src/realtime/protocol';
+import type { ChatRequest, ChatResult, Presence } from '../../../../server/src/realtime/protocol';
 
 export class OfficeScene extends Phaser.Scene {
   private player?: LocalPlayer;
@@ -56,6 +56,7 @@ export class OfficeScene extends Phaser.Scene {
           this.callbacks.onNetwork(status);
         },
         expired: this.callbacks.onSessionExpired,
+        chat: this.callbacks.onChat,
       });
       canvas.focus({ preventScroll: true });
     } catch (error) {
@@ -113,5 +114,8 @@ export class OfficeScene extends Phaser.Scene {
   }
 
   snapshot() { return this.player?.snapshot() ?? null; }
+  sendChat(request: ChatRequest): Promise<ChatResult> {
+    return this.connection?.sendChat(request) ?? Promise.resolve({ ok: false, error: 'Le bureau est déconnecté.' });
+  }
   networkSnapshot() { return { online: this.connection?.ready ?? false, others: [...this.others.values()].map(other => other.snapshot()) }; }
 }

@@ -3,9 +3,9 @@
 VirtualOffice est un prototype scolaire de bureau virtuel 2D : se connecter,
 retrouver ses collègues, se déplacer et discuter en s'approchant d'un groupe.
 
-**Les parties 1 à 4 sont implémentées** : socle Docker, base PostgreSQL,
-authentification et bureau 2D multijoueur sur une carte de test.
-Le chat de proximité viendra à l'étape suivante. Le nom du projet est **VirtualOffice**.
+**Les parties 1 à 5 sont implémentées** : socle Docker, base PostgreSQL,
+authentification, bureau 2D multijoueur et chat textuel de proximité sur une carte
+de test. Le nom du projet est **VirtualOffice**.
 
 ## Périmètre de la V1
 
@@ -143,7 +143,7 @@ les cercles et rectangles représentent l'avatar et le mobilier provisoires.
   rafraîchissement replace l'avatar au point de départ.
 
 Le bureau est maintenant partagé en temps réel (partie 4 ci-dessous).
-Le chat n'est pas encore présent.
+Le panneau de chat permet de discuter avec les collègues à proximité (partie 5).
 
 ### Assets et carte Tiled
 
@@ -168,6 +168,9 @@ Pour remplacer cette carte dans Tiled :
 4. Ajouter les rectangles non pivotés des murs et meubles solides dans le calque
    d'objets `Collision`. Les portes ouvertes ne doivent pas avoir de collision.
    Les tuiles de debug ne créent pas d'obstacle par elles-mêmes.
+   Nommer les murs `wall`, ou ajouter la propriété booléenne `blocksChat = true`,
+   pour bloquer aussi le chat à travers eux. Les meubles bloquent le déplacement,
+   mais pas la conversation.
 5. Ajouter dans le calque d'objets `Spawn` un point `spawn_lounge` dans l'espace
    détente, hors de tout obstacle.
 6. Facultativement, ajouter des rectangles dans le calque d'objets `Zones`, avec
@@ -218,6 +221,44 @@ Le contrat des événements est dans `server/src/realtime/protocol.ts`, importé
 uniquement comme types par le client. Vite relaie `/socket.io` (HTTP et WebSocket)
 vers le même backend que `/api` ; aucun port supplémentaire n'est nécessaire.
 Le bureau, ses écouteurs et son socket sont détruits lorsqu'on quitte la page.
+
+## Chat de proximité — partie 5
+
+Le panneau à droite du bureau affiche les participants et les messages du groupe.
+Il reste disponible en plein écran et passe sous la carte sur un écran étroit.
+Se rapprocher d'un collègue ouvre automatiquement la conversation ; s'éloigner
+de tout le groupe désactive la saisie. **Entrée** ou **Envoyer** envoie le message.
+ZQSD, les flèches et F n'agissent pas sur le jeu pendant la saisie.
+
+- Entrée à **96 px** d'au moins un participant ; un lien existant subsiste jusqu'à
+  **120 px**, tant qu'aucun mur ne coupe la ligne entre les deux avatars.
+- Les groupes sont les composantes connexes de ces liens : A près de B et B près
+  de C forment un groupe, sans agrandir le rayon individuel.
+- Le serveur calcule les groupes, vérifie l'appartenance à chaque envoi et impose
+  l'auteur et l'heure. Le client ne peut pas choisir les destinataires.
+- Chaque composition de groupe a son historique propre. Une arrivée, une fusion
+  ou une séparation ouvre/restaure l'historique correspondant ; les anciens
+  messages ne sont pas copiés vers de nouveaux participants.
+- Une conversation devient inactive dès que cette composition ne forme plus un
+  groupe. Son historique reste en mémoire **5 minutes après cette séparation**.
+  Si les mêmes sessions se retrouvent avant le délai, elles le récupèrent.
+  Un groupe actif n'expire pas au bout de cinq minutes.
+- Un rafraîchissement ou une reconnexion crée une nouvelle session : l'ancien
+  historique n'est pas récupéré. Un redémarrage du serveur efface tous les chats.
+- Limites de démo : **500 caractères**, un envoi toutes les **600 ms** par session
+  et les **100 derniers messages** par conversation. Le texte est affiché sans
+  interpréter le HTML. Aucun message n'est stocké dans PostgreSQL.
+
+Les règles et limites sont dans `server/src/realtime/chat.ts`. Les événements
+`chat:state` et `chat:send` passent par la connexion Socket.IO déjà authentifiée.
+Un accusé de réception confirme l'envoi ; en cas d'incertitude, l'interface signale
+le problème sans renvoyer automatiquement le texte. Voir les
+[accusés de réception Socket.IO](https://socket.io/docs/v4/emitting-events/#acknowledgements).
+
+Pour la démo : connecter Alice et Thomas dans deux onglets, écrire un message,
+éloigner Thomas puis le faire revenir pour retrouver l'historique. Connecter
+Julie ouvre une conversation à trois avec un historique distinct. Le départ de
+Julie restaure la conversation à deux si elle date de moins de cinq minutes.
 
 ## Développer en local
 
@@ -276,6 +317,9 @@ profils publics, les entrées invalides, les jetons expirés ou altérés et l'a
 d'inscription. Ils ne modifient ni ne suppriment les comptes.
 Les tests réseau vérifient aussi les présences, les identités, les positions
 refusées, les collisions serveur, les onglets multiples et l'expiration des JWT.
+Les tests du chat couvrent les chaînes, les murs et portes, l'hystérésis, les
+changements de groupe, les droits d'envoi et la rétention. Une horloge contrôlée
+vérifie la purge à cinq minutes sans attendre cinq minutes réellement.
 
 Les tests du bureau utilisent Chromium via Playwright. Après `npm install`,
 avec `.env` préparé, le client Prisma généré et la base accessible, migrée et
@@ -288,11 +332,13 @@ npm run test:game
 
 Playwright démarre son propre backend sur **4001** et son client sur **5174** ;
 ces deux ports doivent être libres. Ce bureau de test est séparé de la démo sur 4000.
-Il utilise Alice, Thomas et le mot de passe `DEMO_PASSWORD` de `.env`. Les sept scénarios
+Il utilise Alice, Thomas, Julie et le mot de passe `DEMO_PASSWORD` de `.env`. Les huit scénarios
 vérifient la connexion et le démontage du jeu, les touches et diagonales, les
 murs et portes, le mobilier et le focus, les limites, puis la reprise après une
 erreur de chargement, ainsi que deux sessions avec déplacement, rafraîchissement,
-coupure réseau et reconnexion.
+coupure réseau et reconnexion. Le scénario de chat vérifie les échanges à deux
+et à trois, la saisie sans mouvement, l'affichage du HTML comme texte, la reprise
+après séparation et le plein écran.
 Les résultats et captures sont dans `client/test-results/`
 (ignoré par Git). La lecture des coordonnées de l'avatar est exposée uniquement
 en mode Vite `test`.
@@ -347,6 +393,7 @@ VirtualOffice/
 │   │   ├── auth/AuthProvider.tsx
 │   │   ├── components/ConnectionStatus.tsx
 │   │   ├── components/OfficeGame.tsx
+│   │   ├── components/ChatPanel.tsx
 │   │   ├── game/                 # scène Phaser, carte, avatar et clavier
 │   │   ├── pages/Login/
 │   │   ├── pages/Workspace/
@@ -372,6 +419,7 @@ VirtualOffice/
 │   │   └── index.ts
 │   ├── tests/auth.test.ts
 │   ├── tests/realtime.test.ts
+│   ├── tests/chat.test.ts
 │   ├── Dockerfile
 │   └── prisma.config.ts
 ├── scripts/setup-env.mjs
@@ -408,26 +456,26 @@ sous réserve de la règle sur les murs ci-dessous.
 
 Cette règle autorise les groupes en chaîne : si Alice est proche de Thomas et
 Thomas proche de Julie, les trois peuvent discuter ensemble, même si Alice et
-Julie ne sont pas directement à portée l'une de l'autre. Les règles de séparation
-et de fusion des conversations, ainsi que le devenir des messages dans ces cas,
-restent à préciser.
+Julie ne sont pas directement à portée l'une de l'autre. Une composition différente
+utilise un historique distinct, selon les règles de la partie 5 ci-dessus.
 
 Un mur entre deux avatars empêche leur proximité de déclencher une conversation,
 même si la distance entre eux est faible. Cette règle s'applique aussi à l'entrée
-dans un groupe. La méthode de prise en compte des murs et des portes reste à
-définir lors de l'intégration de la carte.
+dans un groupe. Le serveur teste l'intersection du segment entre les avatars avec
+les rectangles des murs ; les passages ouverts ne coupent pas ce segment.
 
 Une marge entre la distance d'entrée et la distance de sortie doit éviter
 les entrées et sorties répétées lorsqu'un avatar reste à la limite de la zone.
-La distance de sortie sera supérieure à celle d'entrée ; les valeurs seront
-ajustées avec la carte de test.
+La distance de sortie est de 120 px, contre 96 px à l'entrée. Ces valeurs sont
+configurables dans `server/src/realtime/chat.ts`.
 
 ### Conservation temporaire
 
 Une conversation active ne doit pas être interrompue au bout de cinq minutes.
 Le délai de conservation est de cinq minutes après son passage à l'état inactif,
 via une constante configurable `CONVERSATION_TTL_MS = 5 * 60 * 1000`.
-La définition exacte de l'inactivité et les règles de reprise restent à préciser.
+L'inactivité commence quand le groupe exact de sessions cesse d'exister. Il peut
+reprendre avant le délai si ces mêmes sessions forment à nouveau un groupe.
 
 Les conversations et leurs messages sont conservés temporairement en mémoire
 côté serveur, sans historique permanent dans PostgreSQL.

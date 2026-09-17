@@ -9,7 +9,7 @@ import { createToken, TOKEN_AUDIENCE, TOKEN_ISSUER } from '../src/auth/token.js'
 import { env } from '../src/config/env.js';
 import { attachOffice } from '../src/realtime/office.js';
 import { clearPath, walkable } from '../src/realtime/map.js';
-import type { ClientEvents, Presence, ServerEvents } from '../src/realtime/protocol.js';
+import type { ChatResult, ChatState, ClientEvents, Presence, ServerEvents } from '../src/realtime/protocol.js';
 import { prisma } from '../src/services/prisma.js';
 
 const server = createServer();
@@ -37,11 +37,11 @@ function socket(token?: string) {
   sockets.push(result);
   return result;
 }
-function event<T>(source: Socket, name: string): Promise<T> {
+function event<T>(source: Socket, name: string, matches: (value: T) => boolean = () => true): Promise<T> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => { source.off(name, receive); reject(new Error(`Timeout: ${name}`)); }, 4_000);
-    const receive = (value: T) => { clearTimeout(timer); resolve(value); };
-    source.once(name, receive);
+    const receive = (value: T) => { if (matches(value)) { clearTimeout(timer); source.off(name, receive); resolve(value); } };
+    source.on(name, receive);
   });
 }
 async function joined(userId: string) {
@@ -132,4 +132,25 @@ test('déconnecte une session lorsque son JWT expire', async () => {
   await welcome;
   await expiry;
   assert.equal(await disconnected, 'io server disconnect');
+});
+
+test('chat Socket.IO : accusés de réception, auteur imposé et refus après départ', async () => {
+  const alice = await joined(aliceId);
+  const send = (client: Socket<ServerEvents, ClientEvents>, request: unknown) =>
+    new Promise<ChatResult>((resolve, reject) => client.timeout(3_000).emit('chat:send', request as never,
+      (error, result) => error ? reject(error) : resolve(result)));
+  assert.equal((await send(alice.client, { conversationId: 'invented', text: 'Seul' })).ok, false);
+  const group = event<ChatState>(alice.client, 'chat:state', state => state?.members.length === 2);
+  const thomas = await joined(thomasId);
+  const conversation = await group;
+  assert.ok(conversation);
+  const received = event<ChatState>(thomas.client, 'chat:state', state => state?.messages.length === 1);
+  assert.equal((await send(alice.client, { conversationId: conversation.id, text: 'Bonjour', name: 'Forged', senderId: thomas.self.id })).ok, true);
+  const message = (await received)!.messages[0];
+  assert.equal(message.name, 'Alice Martin');
+  assert.equal(message.senderId, alice.self.id);
+  const gone = event<ChatState>(alice.client, 'chat:state', state => state === null);
+  thomas.client.disconnect();
+  await gone;
+  assert.equal((await send(alice.client, { conversationId: conversation.id, text: 'Trop tard' })).ok, false);
 });

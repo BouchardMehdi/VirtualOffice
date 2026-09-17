@@ -1,5 +1,5 @@
 import { io, type Socket } from 'socket.io-client';
-import type { ClientEvents, Position, Presence, ServerEvents } from '../../../../server/src/realtime/protocol';
+import type { ChatRequest, ChatResult, ChatState, ClientEvents, Position, Presence, ServerEvents } from '../../../../server/src/realtime/protocol';
 
 export type NetworkStatus = 'connecting' | 'online' | 'reconnecting';
 type Callbacks = {
@@ -8,6 +8,7 @@ type Callbacks = {
   correction: (position: Position) => void;
   status: (status: NetworkStatus) => void;
   expired: () => void;
+  chat: (state: ChatState) => void;
 };
 
 export class OfficeConnection {
@@ -30,9 +31,11 @@ export class OfficeConnection {
       if (this.ready) callbacks.players(players.filter(player => player.id !== this.socket.id), players.length);
     });
     this.socket.on('office:correction', callbacks.correction);
+    this.socket.on('chat:state', callbacks.chat);
     this.socket.on('session:expired', () => { this.destroy(); callbacks.expired(); });
     this.socket.on('disconnect', () => {
       this.ready = false;
+      callbacks.chat(null);
       callbacks.players([], 0);
       callbacks.status('reconnecting');
       if (!this.socket.active) this.retryConnection();
@@ -56,6 +59,15 @@ export class OfficeConnection {
 
   send(position: Position) {
     if (this.ready && this.socket.connected) this.socket.volatile.emit('player:move', position);
+  }
+
+  sendChat(request: ChatRequest): Promise<ChatResult> {
+    if (!this.ready || !this.socket.connected) return Promise.resolve({ ok: false, error: 'Connexion perdue. Attends la reconnexion.' });
+    return new Promise(resolve => {
+      this.socket.timeout(5_000).emit('chat:send', request, (error, result) => {
+        resolve(error ? { ok: false, error: 'Envoi non confirmé. Vérifie les messages avant de réessayer.' } : result);
+      });
+    });
   }
 
   destroy() {

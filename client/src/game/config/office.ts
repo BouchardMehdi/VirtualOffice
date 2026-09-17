@@ -1,3 +1,5 @@
+import type { ChatState } from '../../../../server/src/realtime/protocol';
+
 export const OFFICE = {
   mapKey: 'office-map',
   mapUrl: '/assets/maps/office-test.json',
@@ -17,6 +19,7 @@ export type OfficeCallbacks = {
   onNetwork: (status: 'connecting' | 'online' | 'reconnecting') => void;
   onPresence: (total: number) => void;
   onSessionExpired: () => void;
+  onChat: (state: ChatState) => void;
 };
 
 export type PlayerSnapshot = {
