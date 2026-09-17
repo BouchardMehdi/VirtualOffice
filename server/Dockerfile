@@ -13,4 +13,4 @@ RUN npm run build --workspace @virtualoffice/server
 ENV NODE_ENV=production
 USER node
 EXPOSE 4000
-CMD ["node", "server/dist/index.js"]
+CMD ["npm", "run", "start:demo", "--workspace", "@virtualoffice/server"]

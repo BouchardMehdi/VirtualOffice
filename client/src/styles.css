@@ -10,7 +10,7 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button, a { -webkit-tap-highlight-color: transparent; }
-button { font: inherit; }
+button, input { font: inherit; }
 a { color: inherit; }
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 header, footer { padding: 1.5rem clamp(1.5rem, 5vw, 5rem); }
@@ -30,9 +30,26 @@ h2 { font-size: 1rem; margin: 0 0 0.5rem; }
 button { flex-shrink: 0; border: 0; background: #153f34; color: #fff; padding: 0.75rem 1rem; border-radius: 6px; cursor: pointer; }
 button:hover:not(:disabled) { background: #205b4b; }
 button:disabled { cursor: wait; opacity: 0.6; }
-button:focus-visible, a:focus-visible { outline: 3px solid #197ea4; outline-offset: 4px; }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid #197ea4; outline-offset: 4px; }
 .next-step { margin-top: 1.25rem; font-size: 0.875rem; color: #4d6259; }
 footer { font-size: 0.875rem; color: #4d6259; }
+.login-layout { width: min(100%, 1120px); display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: 4rem; }
+.login-card { padding: 2rem; background: #fff; border: 1px solid #dce4df; border-radius: 12px; }
+.login-card h2 { font-size: 1.5rem; }
+.form-hint { color: #4d6259; margin-top: 0.5rem; }
+form { display: flex; flex-direction: column; }
+label { font-weight: 600; margin: 1rem 0 0.4rem; }
+input { width: 100%; min-width: 0; border: 1px solid #93a89d; border-radius: 6px; padding: 0.7rem 0.8rem; color: #182d27; background: #fff; }
+.submit-button { margin-top: 1.5rem; }
+.form-error { color: #a23420; margin-bottom: 0; }
+.secondary-button { background: #e4ece7; color: #153f34; }
+.secondary-button:hover:not(:disabled) { background: #d1e2d7; }
+.actions { display: flex; flex-wrap: wrap; gap: 1rem; }
+.workspace-placeholder { margin-top: 2rem; padding: 2rem; border: 1px dashed #8da99a; border-radius: 12px; }
+.workspace-placeholder p { margin-bottom: 0; color: #4d6259; }
+@media (max-width: 850px) {
+  .login-layout { grid-template-columns: 1fr; max-width: 620px; gap: 2rem; }
+}
 @media (max-width: 640px) {
   .connection { align-items: stretch; flex-direction: column; }
   main { padding-top: 3rem; padding-bottom: 3rem; }

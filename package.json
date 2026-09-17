@@ -9,6 +9,10 @@
     "prisma": { "mysql2": "3.24.4" }
   },
   "scripts": {
+    "setup": "node scripts/setup-env.mjs",
+    "test": "npm run test --workspace @virtualoffice/server",
+    "prisma:migrate": "npm run prisma:migrate --workspace @virtualoffice/server",
+    "prisma:seed": "npm run prisma:seed --workspace @virtualoffice/server",
     "dev:client": "npm run dev --workspace @virtualoffice/client",
     "dev:server": "npm run dev --workspace @virtualoffice/server",
     "build": "npm run build --workspaces",

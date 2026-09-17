@@ -1,74 +1,66 @@
 # VirtualOffice
 
-VirtualOffice est un prototype scolaire de bureau virtuel 2D. Les utilisateurs
-se connectent avec un compte existant, se déplacent dans un bureau vu du dessus
-et discutent par messages lorsqu'ils sont suffisamment proches.
+VirtualOffice est un prototype scolaire de bureau virtuel 2D : se connecter,
+retrouver ses collègues, se déplacer et discuter en s'approchant d'un groupe.
 
-La partie 1 est en place : client React, API Express, connexion PostgreSQL via
-Prisma et orchestration Docker Compose. La connexion aux comptes, le bureau 2D
-et le chat ne sont pas encore implémentés.
-Le nom retenu est **VirtualOffice** dans le code, la documentation et l'interface.
+**Les parties 1 et 2 sont implémentées** : socle Docker, base PostgreSQL,
+authentification et espace protégé. La carte 2D, les déplacements et le chat
+viendront aux étapes suivantes. Le nom du projet est **VirtualOffice**.
 
 ## Périmètre de la V1
 
-- Une seule carte, créée par l'équipe avec Tiled.
-- Des avatars contrôlés avec ZQSD ou les flèches, avec collisions sur les murs
-  et les meubles configurés comme obstacles.
-- La présence et les déplacements des autres utilisateurs en temps réel.
-- Un chat textuel automatique, y compris en groupe.
-- Des comptes prédéfinis, avec les rôles USER et ADMIN et les mêmes droits en V1.
-- Un lancement local avec Docker Compose.
+Une seule carte créée par l'équipe avec Tiled, des déplacements ZQSD/flèches,
+des collisions, la présence en temps réel et un chat textuel de proximité en groupe.
+Les comptes sont prédéfinis ; USER et ADMIN ont les mêmes droits dans cette V1.
 
-L'audio, la vidéo, l'inscription, l'édition de la carte par l'admin et l'historique
-permanent des messages sont hors du périmètre de la V1.
+L'inscription, l'audio, la vidéo, l'édition de carte par l'admin et l'historique
+permanent des messages sont hors périmètre.
 
-## Stack prévue
+## Stack
 
-- Interface : React, TypeScript et Vite.
-- Bureau 2D : Phaser et une carte Tiled exportée en JSON.
-- Serveur : Node.js, Express, TypeScript et Socket.IO.
-- Utilisateurs : PostgreSQL et Prisma.
-- Authentification : JWT et mots de passe hashés avec bcrypt.
+- Client : React, TypeScript, Vite et React Router.
+- Serveur : Node.js, Express, TypeScript, JWT et bcrypt.
+- Base de données : PostgreSQL 17 et Prisma 7.
 - Environnement local : Docker et Docker Compose.
+- Étapes suivantes : Phaser, Tiled et Socket.IO.
 
-## Lancer la partie 1
+## Démarrage
 
-Prérequis : Docker Desktop démarré avec les conteneurs Linux. Les ports locaux
-5173, 4000 et 5432 doivent être libres (le port PostgreSQL est configurable).
-Node.js et PostgreSQL n'ont pas besoin
-d'être installés sur la machine pour ce lancement.
+Prérequis : Docker Desktop démarré avec les conteneurs Linux. Les ports 5173 et
+4000 doivent être libres. Le port PostgreSQL publié est configurable.
 
-Depuis la racine du dépôt, créer le fichier de configuration une seule fois :
+Depuis la racine, préparer `.env` avec Node.js (aucune installation npm nécessaire) :
 
-```powershell
-Copy-Item .env.example .env
+```sh
+npm run setup
 ```
 
-Sur macOS ou Linux, utiliser `cp .env.example .env` à la place.
-Si `.env` existe déjà, conserver ses valeurs.
+Le script crée `.env` si nécessaire, génère un secret JWT aléatoire et ajoute le
+mot de passe de démonstration. Les valeurs déjà renseignées sont conservées,
+notamment le port PostgreSQL choisi en partie 1. Cette commande met aussi à jour
+une installation existante de la partie 1.
+
+Sans Node.js installé, exécuter le même script avec Docker, depuis PowerShell,
+bash ou zsh :
+
+```sh
+docker run --rm -v "${PWD}:/workspace" -w /workspace node:22-bookworm-slim node scripts/setup-env.mjs
+```
+
+Puis lancer les services :
 
 ```sh
 docker compose up --build
 ```
 
-- Interface : http://localhost:5173
+- Connexion : http://localhost:5173/login
+- Espace protégé : http://localhost:5173/workspace
 - Contrôle de l'API et de PostgreSQL : http://localhost:4000/api/health
 
-La page affiche « Les services sont disponibles. » lorsque le serveur peut
-interroger PostgreSQL via Prisma. La route de contrôle renvoie HTTP 200 avec :
-
-```json
-{"status":"ok","service":"virtualoffice-api","database":"connected"}
-```
-
-Si la base est inaccessible, cette route renvoie HTTP 503 et
-`"database":"unavailable"`. Le bouton de la page permet de refaire la vérification.
-
-Compose attend que PostgreSQL soit prêt avant de lancer le serveur, puis que
-le serveur soit prêt avant de lancer l'interface. Le client utilise le serveur
-Vite pour cette démo locale. Les ports publiés sont limités à la machine locale.
-
-Commandes utiles :
+Le backend applique les migrations puis exécute le seed avant de démarrer.
+Compose attend que PostgreSQL soit prêt, puis que le backend soit prêt, avant
+de lancer l'interface. Les ports sont accessibles uniquement sur la machine locale.
+Le client utilise Vite pour cette démonstration, sans infrastructure de production.
 
 ```sh
 docker compose ps
@@ -78,21 +70,68 @@ docker compose down
 
 `docker compose down` conserve les données dans le volume `postgres_data`.
 Après une modification du code, relancer `docker compose up --build`.
-Pour le rechargement automatique pendant le développement, utiliser le mode
-local ci-dessous.
+
+## Comptes de démonstration
+
+Mot de passe initial commun : **`VirtualOffice2026!`** (`DEMO_PASSWORD` dans
+`.env.example`). Ces identifiants sont publics et réservés à la démo locale.
+Si cette variable est personnalisée avant le premier seed, utiliser sa valeur.
+
+| Utilisateur | Email | Rôle |
+| --- | --- | --- |
+| Alice Martin | `alice@virtualoffice.test` | USER |
+| Thomas Bernard | `thomas@virtualoffice.test` | USER |
+| Julie Dupont | `julie@virtualoffice.test` | USER |
+| Paul Admin | `admin@virtualoffice.test` | ADMIN |
+
+Le seed ajoute uniquement les comptes absents. Il ne réinitialise ni les mots
+de passe ni les autres informations des comptes existants. Modifier
+`DEMO_PASSWORD` après leur création ne change donc pas les mots de passe en base.
+
+## Authentification
+
+- `POST /api/auth/login` reçoit un email et un mot de passe. Il renvoie `token`,
+  `expiresAt` (date d'expiration en millisecondes Unix) et le profil public `user`.
+- `GET /api/auth/me` attend `Authorization: Bearer <token>` et renvoie le profil
+  public lu en base ainsi que `expiresAt`.
+- Les mots de passe sont hashés avec bcrypt. Les hashes ne sont jamais renvoyés.
+- Les JWT expirent après une heure. Le serveur vérifie leur signature, leur
+  algorithme, leur émetteur, leur audience et leur expiration, puis retrouve
+  l'utilisateur en base. Le client ne choisit pas son identité ou son rôle.
+- Le JWT est stocké dans `sessionStorage`, par onglet. Le client vérifie `/me`
+  après un rafraîchissement et bloque l'espace tant que la session n'est pas
+  validée. La déconnexion et l'expiration effacent la session de l'onglet.
+- Pour tester plusieurs comptes, ouvrir des onglets séparés. Un onglet dupliqué
+  peut hériter de la session initiale ; se déconnecter dans cet onglet permet de
+  choisir un autre compte.
+- Les erreurs d'identifiants et de connexion sont affichées dans l'interface.
+  Une panne pendant la restauration d'une session permet de réessayer.
+
+Pour ce POC, il n'y a ni renouvellement automatique ni liste de révocation des
+JWT : un jeton copié avant la déconnexion reste valide jusqu'à son expiration.
+Le stockage par onglet est accessible au JavaScript de l'application.
+Il n'existe pas de route ni de page d'inscription.
+
+La limite des mots de passe respecte les
+[72 octets traités par bcrypt](https://github.com/kelektiv/node.bcrypt.js/).
+La vérification des JWT utilise les options de
+[jsonwebtoken](https://github.com/auth0/node-jsonwebtoken).
 
 ## Développer en local
 
-Prérequis supplémentaires : Node.js 22.12 ou plus récent sur la branche 22,
-ou Node.js 24 ou plus récent, avec npm. Le fichier `.env` doit être présent.
+Prérequis supplémentaires : Node.js 22.12+ sur la branche 22, ou Node.js 24+,
+et npm. Depuis la racine :
 
 ```sh
 npm install
+npm run setup
 npm run prisma:generate
 docker compose up -d database
+npm run prisma:migrate
+npm run prisma:seed
 ```
 
-Dans deux terminaux distincts, depuis la racine :
+Dans deux terminaux distincts :
 
 ```sh
 npm run dev:server
@@ -102,92 +141,115 @@ npm run dev:server
 npm run dev:client
 ```
 
-Ne pas lancer simultanément les services frontend/backend Docker et leurs
-équivalents locaux sur les mêmes ports. Si nécessaire, les arrêter avec
-`docker compose stop frontend backend` avant de lancer les commandes locales.
-
-Sous PowerShell, si la politique d'exécution bloque `npm.ps1`, utiliser
+Ne pas lancer les services frontend/backend Docker sur les mêmes ports que les
+serveurs locaux. Si nécessaire : `docker compose stop frontend backend`.
+Sous PowerShell, si `npm.ps1` est bloqué par la politique d'exécution, utiliser
 `npm.cmd` à la place de `npm`.
 
-Vérifications :
+## Migrations, seed et vérifications
+
+La migration versionnée `20260917000000_create_users` ajoute User et l'enum Role.
+Pour relancer explicitement les opérations dans Docker :
+
+```sh
+docker compose exec backend npm run prisma:migrate --workspace @virtualoffice/server
+docker compose exec backend npm run prisma:seed --workspace @virtualoffice/server
+```
+
+Hors Docker, utiliser `npm run prisma:migrate` et `npm run prisma:seed`.
+Le seed est configuré dans `server/prisma.config.ts` et peut être répété.
 
 ```sh
 npm run typecheck
 npm run build
 npm run prisma:validate
+npm test
 docker compose config --quiet
 ```
 
+`npm test` lance une API temporaire sur un port libre et vérifie l'authentification
+par HTTP. PostgreSQL doit être accessible via `.env`, avec migration et seed
+exécutés. Les tests contrôlent les comptes, les hashes, le login, `/me`, les
+profils publics, les entrées invalides, les jetons expirés ou altérés et l'absence
+d'inscription. Ils ne modifient ni ne suppriment les comptes.
+
+La route `/api/health` interroge réellement PostgreSQL via Prisma : HTTP 200
+avec `status: "ok"` et `database: "connected"`, ou HTTP 503 avec
+`database: "unavailable"`. L'espace connecté permet de refaire cette vérification.
+
 ## Configuration
 
-Le fichier `.env` est ignoré par Git et exclu des images Docker.
-Les valeurs de `.env.example` sont réservées à la démonstration locale.
+`.env` est ignoré par Git et exclu des images Docker. `.env.example` contient
+uniquement la configuration d'exemple de cette démonstration locale.
 
 | Variable | Usage |
 | --- | --- |
-| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Initialisation du conteneur PostgreSQL et connexion du backend Docker. |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | Initialisation de PostgreSQL et connexion du backend Docker. |
 | `POSTGRES_PORT` | Port PostgreSQL publié sur la machine ; 5432 par défaut. |
-| `DATABASE_URL` | Connexion Prisma hors Docker, avec `localhost` comme hôte. |
+| `DATABASE_URL` | Connexion Prisma hors Docker avec `localhost` comme hôte. |
 | `PORT` | Port du serveur hors Docker ; 4000 par défaut. |
-| `CLIENT_ORIGIN` | Origine autorisée par CORS ; `http://localhost:5173` par défaut. |
-| `API_PROXY_TARGET` | Adresse du backend pour le proxy Vite hors Docker. |
+| `CLIENT_ORIGIN` | Origine CORS ; `http://localhost:5173` par défaut. |
+| `JWT_SECRET` | Secret aléatoire généré par le script setup, au moins 32 octets. |
+| `DEMO_PASSWORD` | Mot de passe des comptes absents lors du seed. |
+| `API_PROXY_TARGET` | Cible du proxy Vite hors Docker ; `http://localhost:4000`. |
 
-Docker Compose fixe les ports internes et utilise `database` comme hôte
-PostgreSQL et `backend` comme cible du proxy. Le navigateur appelle `/api` sur
-l'origine de l'interface ; aucune donnée de connexion PostgreSQL ne lui est envoyée.
-Si les identifiants PostgreSQL changent, adapter aussi `DATABASE_URL` pour le
-mode local. Utiliser des valeurs compatibles avec une URL ou encoder les
-caractères réservés dans l'URL de connexion.
+Docker fixe les ports internes et utilise `database` comme hôte PostgreSQL et
+`backend` comme cible du proxy. Le navigateur appelle `/api` sur l'origine du
+client ; aucune donnée de connexion PostgreSQL ni secret JWT ne lui est envoyé.
 
-Les variables d'initialisation PostgreSQL s'appliquent à un volume neuf ; modifier
-le fichier `.env` ne change pas les comptes d'une base déjà initialisée.
+Si le port 5432 est déjà occupé, choisir `POSTGRES_PORT=55432` et remplacer
+`localhost:5432` par `localhost:55432` dans `DATABASE_URL`. Le port interne reste
+5432. Si les identifiants changent, adapter aussi l'URL locale ; encoder les
+caractères réservés dans les URL de connexion.
 
-Si une autre installation PostgreSQL occupe déjà le port 5432, définir
-`POSTGRES_PORT=55432` et remplacer `localhost:5432` par `localhost:55432` dans
-`DATABASE_URL`. Le serveur Docker continue d'utiliser le port interne 5432.
+Les variables d'initialisation PostgreSQL s'appliquent à un volume neuf ; changer
+`.env` ne change pas les comptes PostgreSQL déjà créés.
 
-## Structure actuelle
+## Structure
 
 ```text
 VirtualOffice/
 ├── client/
 │   ├── src/
-│   │   ├── services/api.ts
+│   │   ├── auth/AuthProvider.tsx
+│   │   ├── components/ConnectionStatus.tsx
+│   │   ├── pages/Login/
+│   │   ├── pages/Workspace/
+│   │   ├── services/
+│   │   ├── types/auth.ts
 │   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── styles.css
+│   │   └── main.tsx
 │   ├── Dockerfile
 │   └── vite.config.ts
 ├── server/
-│   ├── prisma/schema.prisma
+│   ├── prisma/                  # schéma, migration et seed
 │   ├── src/
-│   │   ├── config/env.ts
-│   │   ├── routes/health.ts
-│   │   ├── services/prisma.ts
+│   │   ├── auth/
+│   │   ├── config/
+│   │   ├── middleware/
+│   │   ├── routes/              # auth et health
+│   │   ├── services/
+│   │   ├── types/
 │   │   ├── app.ts
 │   │   └── index.ts
+│   ├── tests/auth.test.ts
 │   ├── Dockerfile
 │   └── prisma.config.ts
+├── scripts/setup-env.mjs
 ├── .env.example
 ├── docker-compose.yml
 ├── package.json
 └── package-lock.json
 ```
 
-Les deux applications utilisent les workspaces npm et un verrou de dépendances
-commun. Prisma 7 génère son client dans `server/src/generated/prisma`, ignoré par
-Git et régénéré pendant la compilation. La configuration suit la
+Les applications utilisent les workspaces npm et un verrou de dépendances commun.
+Prisma génère son client dans `server/src/generated/prisma`, ignoré par Git et
+régénéré à la compilation. La configuration suit la
 [documentation Prisma 7](https://www.prisma.io/docs/orm/v7/prisma-client/setup-and-configuration/introduction).
-Deux versions transitives de l'outillage Prisma (`deepmerge-ts` et `mysql2`) sont
-fixées via `overrides` à la racine pour corriger les alertes de dépendances
-signalées lors de l'installation.
+Les versions transitives `deepmerge-ts` et `mysql2` sont fixées avec `overrides`
+pour corriger les alertes de dépendances identifiées en partie 1.
 L'ordre de démarrage utilise les
-[contrôles de santé Docker Compose](https://docs.docker.com/compose/how-tos/startup-order/).
-
-Le schéma ne contient pas encore de modèle métier : la route de contrôle exécute
-seulement `SELECT 1`. Le modèle User, la première migration, le seed et les
-identifiants de démonstration seront ajoutés en partie 2. Il n'y a donc aucune
-migration ni aucun seed à exécuter à cette étape.
+[contrôles de santé Compose](https://docs.docker.com/compose/how-tos/startup-order/).
 
 ## Règles de fonctionnement retenues
 

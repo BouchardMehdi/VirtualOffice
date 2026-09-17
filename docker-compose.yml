@@ -27,6 +27,8 @@ services:
       NODE_ENV: production
       PORT: "4000"
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
+      JWT_SECRET: ${JWT_SECRET:?Executer npm run setup avant le demarrage}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:?Executer npm run setup avant le demarrage}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}?schema=public
     ports:
       - "127.0.0.1:4000:4000"

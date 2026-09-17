@@ -8,4 +8,18 @@ datasource db {
   provider = "postgresql"
 }
 
-// Le modele User, les roles, la premiere migration et le seed arrivent a l'etape 2.
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}

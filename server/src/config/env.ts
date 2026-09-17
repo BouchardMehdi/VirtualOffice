@@ -7,6 +7,7 @@ config({ path: fileURLToPath(new URL('../../../.env', import.meta.url)), quiet: 
 const databaseUrl = process.env.DATABASE_URL;
 const port = Number(process.env.PORT || 4000);
 const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
+const jwtSecret = process.env.JWT_SECRET;
 
 if (!databaseUrl || !/^postgres(ql)?:\/\//.test(databaseUrl)) {
   throw new Error('DATABASE_URL doit contenir une URL PostgreSQL. Copier .env.example vers .env.');
@@ -16,4 +17,8 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error('PORT doit être un entier entre 1 et 65535.');
 }
 
-export const env = { databaseUrl, port, clientOrigin };
+if (!jwtSecret || Buffer.byteLength(jwtSecret, 'utf8') < 32) {
+  throw new Error('JWT_SECRET doit contenir au moins 32 octets. Exécuter npm run setup à la racine.');
+}
+
+export const env = { databaseUrl, port, clientOrigin, jwtSecret };
