@@ -25,6 +25,11 @@ export class LocalPlayer {
     this.label.setPosition(this.marker.x, this.marker.y - 22);
   }
 
+  setPosition(x: number, y: number) {
+    this.body.reset(x, y);
+    this.label.setPosition(x, y - 22);
+  }
+
   snapshot(): PlayerSnapshot {
     return {
       x: this.marker.x, y: this.marker.y,

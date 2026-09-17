@@ -1,8 +1,12 @@
 import { app } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from './services/prisma.js';
+import { createServer } from 'node:http';
+import { attachOffice } from './realtime/office.js';
 
-const server = app.listen(env.port, '0.0.0.0', () => {
+const server = createServer(app);
+const io = attachOffice(server);
+server.listen(env.port, '0.0.0.0', () => {
   console.log(`VirtualOffice API : http://localhost:${env.port}`);
 });
 
@@ -20,7 +24,7 @@ function shutdown() {
   const timeout = setTimeout(() => process.exit(1), 8_000);
   timeout.unref();
 
-  server.close(async () => {
+  io.close(async () => {
     await prisma.$disconnect();
     clearTimeout(timeout);
     process.exit(0);

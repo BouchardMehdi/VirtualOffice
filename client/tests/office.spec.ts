@@ -1,17 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { PlayerSnapshot } from '../src/game/config/office';
 
-async function signIn(page: Page) {
+async function signIn(page: Page, account = 'alice') {
   await page.goto('/login');
-  await page.getByLabel('Adresse email').fill('alice@virtualoffice.test');
+  await page.getByLabel('Adresse email').fill(`${account}@virtualoffice.test`);
   await page.getByLabel('Mot de passe').fill(process.env.DEMO_PASSWORD!);
   await page.getByRole('button', { name: 'Entrer dans le bureau' }).click();
   await expect(page).toHaveURL(/\/workspace$/);
 }
 
 async function ready(page: Page) {
-  await expect(page.getByRole('application', { name: 'Bureau virtuel de Alice Martin' })).toBeVisible();
+  await expect(page.getByRole('application')).toBeVisible();
   await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.snapshot())).toBeTruthy();
+  await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.network().online)).toBe(true);
   await page.locator('canvas').click();
 }
 
@@ -144,4 +145,39 @@ test('un chargement échoué propose de réessayer sans créer deux jeux', async
   await expect(page.locator('canvas')).toHaveCount(1);
   await hold(page, 'd', 200);
   expect((await snapshot(page)).x).toBeGreaterThan(170);
+});
+
+test('deux comptes se voient, bougent, se reconnectent et quittent sans fantômes', async ({ browser }, testInfo) => {
+  test.setTimeout(75_000);
+  const aliceContext = await browser.newContext();
+  const thomasContext = await browser.newContext();
+  const alice = await aliceContext.newPage();
+  const thomas = await thomasContext.newPage();
+  const others = (page: Page) => page.evaluate(() => window.__virtualofficeTest?.network().others ?? []);
+  try {
+    await signIn(alice);
+    await ready(alice);
+    await signIn(thomas, 'thomas');
+    await ready(thomas);
+    await expect.poll(async () => (await others(alice)).map(player => player.name)).toEqual(['Thomas Bernard']);
+    await expect.poll(async () => (await others(thomas)).map(player => player.name)).toEqual(['Alice Martin']);
+    await expect(alice.locator('.office-presence')).toHaveText('2 connectés');
+    await alice.locator('canvas').click();
+    await hold(alice, 's', 300);
+    const moved = await snapshot(alice);
+    await expect.poll(async () => Math.abs((await others(thomas))[0].renderedY - moved.y)).toBeLessThan(2);
+    await alice.screenshot({ path: testInfo.outputPath('multijoueur.png'), fullPage: true });
+    await thomas.reload();
+    await ready(thomas);
+    await expect.poll(async () => (await others(alice)).length).toBe(1);
+    await thomasContext.setOffline(true);
+    await expect(thomas.locator('.office-presence')).toContainText('reconnexion', { timeout: 15_000 });
+    await expect.poll(async () => (await others(alice)).length, { timeout: 15_000 }).toBe(0);
+    await thomasContext.setOffline(false);
+    await expect.poll(() => thomas.evaluate(() => window.__virtualofficeTest?.network().online), { timeout: 15_000 }).toBe(true);
+    await expect.poll(async () => (await others(alice)).length).toBe(1);
+    await thomas.getByRole('button', { name: 'Se déconnecter' }).click();
+    await expect.poll(async () => (await others(alice)).length).toBe(0);
+    await expect(alice.locator('.office-presence')).toHaveText('1 connecté');
+  } finally { await aliceContext.close(); await thomasContext.close(); }
 });

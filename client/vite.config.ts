@@ -13,6 +13,11 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
+        '/socket.io': {
+          target: env.API_PROXY_TARGET || 'http://localhost:4000',
+          changeOrigin: true,
+          ws: true,
+        },
         '/api': {
           target: env.API_PROXY_TARGET || 'http://localhost:4000',
           changeOrigin: true,

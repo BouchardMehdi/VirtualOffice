@@ -4,12 +4,12 @@ import { OfficeScene } from './scenes/OfficeScene';
 
 declare global {
   interface Window {
-    __virtualofficeTest?: { snapshot: () => PlayerSnapshot | null };
+    __virtualofficeTest?: { snapshot: () => PlayerSnapshot | null; network: () => ReturnType<OfficeScene['networkSnapshot']> };
   }
 }
 
-export function createOfficeGame(parent: HTMLElement, playerName: string, callbacks: OfficeCallbacks) {
-  const scene = new OfficeScene(playerName, callbacks);
+export function createOfficeGame(parent: HTMLElement, playerName: string, token: string, callbacks: OfficeCallbacks) {
+  const scene = new OfficeScene(playerName, token, callbacks);
   const game = new Phaser.Game({
     type: Phaser.AUTO, parent, width: OFFICE.width, height: OFFICE.height,
     backgroundColor: '#273b32', pixelArt: true, roundPixels: true, banner: false,
@@ -21,7 +21,7 @@ export function createOfficeGame(parent: HTMLElement, playerName: string, callba
   const resize = new ResizeObserver(() => { if (game.isBooted) game.scale.refresh(); });
   resize.observe(parent);
   // Lecture seule, uniquement pour les tests du jeu ; aucun contrôle de position exposé.
-  const probe = { snapshot: () => scene.snapshot() };
+  const probe = { snapshot: () => scene.snapshot(), network: () => scene.networkSnapshot() };
   if (import.meta.env.MODE === 'test') window.__virtualofficeTest = probe;
 
   return {

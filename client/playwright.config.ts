@@ -17,10 +17,15 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
   },
-  webServer: {
+  webServer: [{
+    command: 'node --import tsx ../server/src/index.ts',
+    url: 'http://127.0.0.1:4001/api/health',
+    reuseExistingServer: false,
+    env: { PORT: '4001', CLIENT_ORIGIN: 'http://127.0.0.1:5174' },
+  }, {
     command: 'npm run dev -- --host 127.0.0.1 --port 5174 --mode test',
     url: 'http://127.0.0.1:5174',
     reuseExistingServer: false,
-    env: { API_PROXY_TARGET: 'http://localhost:4000' },
-  },
+    env: { API_PROXY_TARGET: 'http://127.0.0.1:4001' },
+  }],
 });

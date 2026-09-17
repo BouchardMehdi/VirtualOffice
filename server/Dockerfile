@@ -8,6 +8,7 @@ COPY server/package.json server/package.json
 RUN npm ci --workspace @virtualoffice/server --include-workspace-root=false
 
 COPY server/ server/
+COPY client/public/assets/maps/ client/public/assets/maps/
 RUN npm run build --workspace @virtualoffice/server
 
 ENV NODE_ENV=production

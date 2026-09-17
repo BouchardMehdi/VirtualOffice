@@ -30,6 +30,8 @@ export class MovementControls {
 
   private clear = () => { this.pressed.clear(); };
 
+  reset() { this.clear(); }
+
   private focus = () => { this.canvas.focus({ preventScroll: true }); };
 
   getDirection() {

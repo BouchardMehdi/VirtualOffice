@@ -7,6 +7,7 @@ COPY server/package.json server/package.json
 RUN npm ci --workspace @virtualoffice/client --include-workspace-root=false
 
 COPY client/ client/
+COPY server/src/realtime/protocol.ts server/src/realtime/protocol.ts
 RUN npm run build --workspace @virtualoffice/client
 RUN mkdir -p node_modules/.vite-temp node_modules/.vite && chown -R node:node client node_modules/.vite-temp node_modules/.vite
 

@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useAuth } from '../auth/AuthProvider';
+import { tokenStorage } from '../services/auth';
+import type { NetworkStatus } from '../game/network/OfficeConnection';
 
 export function OfficeGame({ playerName }: { playerName: string }) {
+  const { signOut } = useAuth();
+  const [network, setNetwork] = useState<NetworkStatus>('connecting');
+  const [presence, setPresence] = useState(0);
   const office = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
   const fullscreenPending = useRef(false);
@@ -58,26 +64,36 @@ export function OfficeGame({ playerName }: { playerName: string }) {
     let instance: { destroy: () => void } | undefined;
     setStatus('loading');
     setError('');
+    setNetwork('connecting');
+    setPresence(0);
 
     import('../game/createOfficeGame').then(({ createOfficeGame }) => {
       if (!active) return;
-      instance = createOfficeGame(mount, playerName, {
+      const token = tokenStorage.read();
+      if (!token) { signOut('Reconnecte-toi pour entrer dans le bureau.'); return; }
+      instance = createOfficeGame(mount, playerName, token, {
         onReady: () => { if (active) setStatus('ready'); },
         onAreaChange: (value) => { if (active) setArea(value); },
         onError: (message) => { if (active) { setError(message); setStatus('error'); } },
+        onNetwork: value => { if (active) setNetwork(value); },
+        onPresence: total => { if (active) setPresence(total); },
+        onSessionExpired: () => { if (active) signOut('Ta session a expiré ou est invalide. Reconnecte-toi.'); },
       });
     }).catch(() => {
       if (active) { setError('Impossible de démarrer le bureau. Réessaie dans un instant.'); setStatus('error'); }
     });
 
     return () => { active = false; instance?.destroy(); mount.remove(); };
-  }, [playerName, attempt]);
+  }, [playerName, attempt, signOut]);
 
   return <section className="office" aria-label="Bureau interactif" ref={office} onKeyDown={onFullscreenKey}>
     <div className="office-toolbar">
       <p><strong>Lieu :</strong> <span aria-live="polite">{area}</span></p>
       <div className="office-toolbar__actions">
-        <span className="demo-label">Carte de test · Mode solo</span>
+        <span className="demo-label office-presence" role="status">
+          {network === 'online' ? `${presence} connecté${presence > 1 ? 's' : ''}` :
+            network === 'connecting' ? 'Connexion au bureau…' : 'Connexion perdue · reconnexion…'}
+        </span>
         <button type="button" onClick={() => void toggleFullscreen()} disabled={!fullscreenSupported}
           aria-keyshortcuts="f Escape" aria-pressed={fullscreen}
           title={fullscreenSupported ? 'F : basculer · Échap : quitter' : 'Plein écran indisponible dans ce navigateur'}>
@@ -98,6 +114,7 @@ export function OfficeGame({ playerName }: { playerName: string }) {
       Clique dans le bureau, puis utilise <strong>ZQSD</strong> ou <strong>les flèches</strong> pour te déplacer.
       {' '}Appuie sur <kbd>Tab</kbd> pour quitter le bureau au clavier.
       {fullscreenSupported && <> <kbd>F</kbd> : plein écran / retour · <kbd>Échap</kbd> : quitter le plein écran.</>}
+      {' '}Ton avatar est vert, les autres sont bleus.
     </p>
   </section>;
 }

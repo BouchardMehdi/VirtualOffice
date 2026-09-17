@@ -14,6 +14,9 @@ export type OfficeCallbacks = {
   onReady: () => void;
   onAreaChange: (area: string) => void;
   onError: (message: string) => void;
+  onNetwork: (status: 'connecting' | 'online' | 'reconnecting') => void;
+  onPresence: (total: number) => void;
+  onSessionExpired: () => void;
 };
 
 export type PlayerSnapshot = {
