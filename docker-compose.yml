@@ -1,0 +1,63 @@
+name: virtualoffice
+
+services:
+  database:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Copier .env.example vers .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Renseigner POSTGRES_PASSWORD dans .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Renseigner POSTGRES_DB dans .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: "4000"
+      CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}?schema=public
+    ports:
+      - "127.0.0.1:4000:4000"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+    init: true
+    environment:
+      API_PROXY_TARGET: http://backend:4000
+    ports:
+      - "127.0.0.1:5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5173').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  postgres_data:

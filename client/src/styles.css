@@ -1,0 +1,39 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #182d27;
+  background: #f5f7f6;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  line-height: 1.6;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button { font: inherit; }
+a { color: inherit; }
+.app-shell { min-height: 100vh; display: flex; flex-direction: column; }
+header, footer { padding: 1.5rem clamp(1.5rem, 5vw, 5rem); }
+header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #dce4df; flex-wrap: wrap; }
+.brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.06em; text-decoration: none; }
+.brand span { color: #1c7656; }
+.demo-label { font-size: 0.875rem; color: #4d6259; }
+main { width: min(100%, 900px); margin: auto; padding: 4rem 1.5rem; }
+.eyebrow { color: #246a4c; font-weight: 650; margin-bottom: 1rem; }
+h1 { font-size: clamp(2.25rem, 5vw, 4rem); line-height: 1.12; letter-spacing: -0.045em; max-width: 720px; margin: 0 0 1.5rem; }
+.introduction { color: #4d6259; max-width: 560px; font-size: 1.125rem; }
+.connection { margin-top: 3rem; padding: 1.5rem; background: white; border: 1px solid #dce4df; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; }
+h2 { font-size: 1rem; margin: 0 0 0.5rem; }
+.status { margin: 0; color: #4d6259; }
+.status--ready { color: #17623f; }
+.status--unavailable, .status--database-unavailable { color: #a23420; }
+button { flex-shrink: 0; border: 0; background: #153f34; color: #fff; padding: 0.75rem 1rem; border-radius: 6px; cursor: pointer; }
+button:hover:not(:disabled) { background: #205b4b; }
+button:disabled { cursor: wait; opacity: 0.6; }
+button:focus-visible, a:focus-visible { outline: 3px solid #197ea4; outline-offset: 4px; }
+.next-step { margin-top: 1.25rem; font-size: 0.875rem; color: #4d6259; }
+footer { font-size: 0.875rem; color: #4d6259; }
+@media (max-width: 640px) {
+  .connection { align-items: stretch; flex-direction: column; }
+  main { padding-top: 3rem; padding-bottom: 3rem; }
+}

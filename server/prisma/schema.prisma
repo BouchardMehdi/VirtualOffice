@@ -1,0 +1,11 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Le modele User, les roles, la premiere migration et le seed arrivent a l'etape 2.
