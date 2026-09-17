@@ -10,7 +10,7 @@
   "type": "map",
   "version": "1.10",
   "tiledversion": "1.11.0",
-  "nextlayerid": 8,
+  "nextlayerid": 9,
   "layers": [
     {
       "id": 1,
@@ -504,7 +504,7 @@
       "opacity": 1,
       "visible": true,
       "data": [
-        7,
+        11,
         5,
         5,
         5,
@@ -514,7 +514,7 @@
         5,
         5,
         5,
-        7,
+        11,
         5,
         5,
         5,
@@ -529,7 +529,7 @@
         5,
         5,
         5,
-        7,
+        11,
         6,
         0,
         0,
@@ -774,7 +774,7 @@
         0,
         0,
         0,
-        7,
+        11,
         5,
         5,
         5,
@@ -946,7 +946,7 @@
         0,
         0,
         6,
-        7,
+        11,
         5,
         5,
         5,
@@ -956,7 +956,7 @@
         5,
         5,
         5,
-        7,
+        11,
         5,
         5,
         5,
@@ -971,7 +971,7 @@
         5,
         5,
         5,
-        7
+        11
       ]
     },
     {
@@ -1177,7 +1177,7 @@
         0,
         0,
         0,
-        9,
+        536870924,
         0,
         0,
         0,
@@ -1203,7 +1203,7 @@
         0,
         0,
         0,
-        12,
+        536870924,
         0,
         0,
         0,
@@ -1490,7 +1490,7 @@
         {
           "id": 3,
           "name": "Bureau",
-          "type": "",
+          "type": "desk",
           "x": 448,
           "y": 96,
           "width": 96,
@@ -1501,7 +1501,7 @@
         {
           "id": 4,
           "name": "Bureau",
-          "type": "",
+          "type": "desk",
           "x": 640,
           "y": 96,
           "width": 96,
@@ -2888,22 +2888,78 @@
           ]
         }
       ]
+    },
+    {
+      "id": 8,
+      "name": "Decor",
+      "type": "objectgroup",
+      "draworder": "topdown",
+      "x": 0,
+      "y": 0,
+      "opacity": 1,
+      "visible": true,
+      "objects": [
+        {
+          "id": 125,
+          "name": "Tableau",
+          "type": "picture",
+          "x": 416,
+          "y": 0,
+          "width": 32,
+          "height": 32,
+          "rotation": 0,
+          "visible": true
+        },
+        {
+          "id": 126,
+          "name": "Horloge",
+          "type": "clock",
+          "x": 592,
+          "y": 0,
+          "width": 32,
+          "height": 32,
+          "rotation": 0,
+          "visible": true
+        },
+        {
+          "id": 127,
+          "name": "Plante de bureau",
+          "type": "plant",
+          "x": 516,
+          "y": 98,
+          "width": 28,
+          "height": 28,
+          "rotation": 0,
+          "visible": true
+        },
+        {
+          "id": 128,
+          "name": "Plante de bureau",
+          "type": "plant",
+          "x": 708,
+          "y": 98,
+          "width": 28,
+          "height": 28,
+          "rotation": 0,
+          "visible": true
+        }
+      ]
     }
   ],
   "tilesets": [
     {
       "firstgid": 1,
-      "name": "virtualoffice_base",
+      "name": "virtualoffice_custom_tiles",
       "tilewidth": 32,
       "tileheight": 32,
-      "tilecount": 16,
-      "columns": 4,
+      "tilecount": 32,
+      "columns": 8,
       "margin": 0,
       "spacing": 0,
-      "image": "../tilesets/virtualoffice_base_tileset_32x32.png",
-      "imagewidth": 128,
+      "image": "../custom/tiles/office_tileset_32x32.png",
+      "imagewidth": 256,
       "imageheight": 128
     }
   ],
-  "nextobjectid": 125
+  "nextobjectid": 129
 }

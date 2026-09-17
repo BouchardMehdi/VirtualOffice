@@ -4,12 +4,19 @@ export const OFFICE = {
   mapKey: 'office-map',
   mapUrl: '/assets/maps/office-test.json',
   tilesetKey: 'office-tiles',
-  tilesetName: 'virtualoffice_base',
-  tilesetUrl: '/assets/tilesets/virtualoffice_base_tileset_32x32.png',
+  tilesetName: 'virtualoffice_custom_tiles',
+  tilesetUrl: '/assets/custom/tiles/office_tileset_32x32.png',
+  furnitureKey: 'office-furniture',
+  furnitureUrl: '/assets/custom/furniture/office_furniture_64x64.png',
+  decorKey: 'office-decor',
+  decorUrl: '/assets/custom/decor/office_decor_32x32.png',
+  avatarKey: 'office-avatar',
+  avatarUrl: '/assets/custom/avatars/avatar_basic_32x48.png',
   width: 832,
   height: 576,
   playerSpeed: 160,
   playerRadius: 10,
+  nameOffset: 46,
 } as const;
 
 export type OfficeCallbacks = {

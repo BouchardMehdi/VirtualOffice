@@ -120,10 +120,11 @@ La vérification des JWT utilise les options de
 
 ## Bureau 2D — partie 3
 
-Après connexion à `/workspace`, l'avatar provisoire apparaît dans l'espace
+Après connexion à `/workspace`, le personnage apparaît dans l'espace
 détente avec le prénom et le nom du compte. La carte contient aussi un open space
-et une salle de réunion. Les sols, murs et portes utilisent le pack fourni ;
-les cercles et rectangles représentent l'avatar et le mobilier provisoires.
+et une salle de réunion. Les sols, murs, portes, meubles et décorations utilisent
+le nouveau pack fourni. Le personnage 32 × 48 est animé dans les quatre directions ;
+un repère vert à ses pieds permet d'identifier son propre avatar.
 
 - Déplacement : **ZQSD** ou **flèches directionnelles**.
 - Cliquer dans le bureau pour lui donner le focus ; **Tab** permet d'en sortir.
@@ -148,7 +149,7 @@ Le panneau de chat permet de discuter avec les collègues à proximité (partie 
 ### Assets et carte Tiled
 
 - Carte de test : `client/public/assets/maps/office-test.json`.
-- Image et description du tileset : `client/public/assets/tilesets/`.
+- Pack graphique (tileset, mobilier, décorations et personnage) : `client/public/assets/custom/`.
 - Provenance du pack fourni : [CREDITS.md](CREDITS.md).
 - Chemins de chargement et vitesse : `client/src/game/config/office.ts`.
 
@@ -162,7 +163,7 @@ Pour remplacer cette carte dans Tiled :
 1. Utiliser une carte orthogonale finie, avec une grille 32 × 32.
 2. Ajouter le tileset puis l'intégrer à la carte (« Embed Tileset ») avant l'export
    JSON. Le `.tsx` fourni est une description Tiled, pas un composant React.
-   Le chargeur actuel utilise un seul tileset nommé `virtualoffice_base`.
+   Le chargeur actuel utilise un seul tileset nommé `virtualoffice_custom_tiles`.
 3. Créer les calques de tuiles `Floor`, `Walls` et `Doors`, exportés en tableaux
    JSON non compressés.
 4. Ajouter les rectangles non pivotés des murs et meubles solides dans le calque
@@ -174,9 +175,11 @@ Pour remplacer cette carte dans Tiled :
 5. Ajouter dans le calque d'objets `Spawn` un point `spawn_lounge` dans l'espace
    détente, hors de tout obstacle.
 6. Facultativement, ajouter des rectangles dans le calque d'objets `Zones`, avec
-   une propriété texte `label`. Le calque d'objets `Furniture` dessine uniquement
-   des rectangles provisoires ; leurs obstacles doivent figurer dans `Collision`.
-7. Placer le JSON dans `public/assets/maps/`, les images dans `public/assets/tilesets/`
+   une propriété texte `label`. Les rectangles du calque d'objets `Furniture`
+   affichent les meubles du pack selon leur type : `desk`, `sofa` ou `table`.
+   Leurs obstacles doivent figurer dans `Collision`. Le calque facultatif `Decor`
+   affiche les types `picture`, `clock` et `plant`, sans créer d'obstacle.
+7. Placer le JSON dans `public/assets/maps/`, les images dans `public/assets/custom/`
    et adapter `game/config/office.ts` si les chemins ou le nom du tileset changent.
    Le serveur lit la même carte via `server/src/realtime/map.ts` : adapter aussi
    ce chemin si le fichier est renommé, puis redémarrer/reconstruire le backend.
@@ -189,8 +192,8 @@ pas automatiquement les obstacles. L'intégration utilise Arcade Physics et le
 ## Multijoueur — partie 4
 
 Ouvrir deux onglets sur http://localhost:5173 et connecter **Alice** dans l'un,
-**Thomas** dans l'autre. Chaque personne voit son avatar vert et les autres en
-bleu, avec leurs noms. Le compteur inclut sa propre présence. Les avatars ne
+**Thomas** dans l'autre. Chaque personne voit son repère et son nom en vert,
+ceux des autres en bleu. Le compteur inclut sa propre présence. Les avatars ne
 se bloquent pas entre eux ; les murs et meubles restent solides.
 
 - Les arrivées, positions et départs sont partagés dans un bureau unique.

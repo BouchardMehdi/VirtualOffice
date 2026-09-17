@@ -125,7 +125,7 @@ export function OfficeGame({ playerName }: { playerName: string }) {
       Clique dans le bureau, puis utilise <strong>ZQSD</strong> ou <strong>les flèches</strong> pour te déplacer.
       {' '}Appuie sur <kbd>Tab</kbd> pour quitter le bureau au clavier.
       {fullscreenSupported && <> <kbd>F</kbd> : plein écran / retour · <kbd>Échap</kbd> : quitter le plein écran.</>}
-      {' '}Ton avatar est vert, les autres sont bleus.
+      {' '}Ton repère est vert, ceux des autres sont bleus.
     </p>
   </section>;
 }

@@ -34,14 +34,24 @@ export function buildOffice(scene: Phaser.Scene) {
     obstacles.add(obstacle);
   }
 
+  // Cadres détourés dans les cellules 64×64 du pack, sans modifier les PNG.
+  const furniture = scene.textures.get(OFFICE.furnitureKey);
+  for (const [name, x, y, width, height] of [
+    ['desk', 69, 8, 55, 55], ['sofa', 197, 12, 55, 39], ['table', 132, 82, 57, 29],
+  ] as const) {
+    if (!furniture.has(name)) furniture.add(name, 0, x, y, width, height);
+  }
   for (const item of map.getObjectLayer('Furniture')?.objects ?? []) {
     const bounds = rectangle(item);
-    const color = item.type === 'sofa' ? 0x537b6a : 0x936b43;
-    scene.add.rectangle(bounds.centerX, bounds.centerY, bounds.width, bounds.height, color)
-      .setStrokeStyle(2, 0x35483b).setDepth(5);
-    scene.add.text(bounds.centerX, bounds.centerY, item.name, {
-      fontFamily: 'system-ui, sans-serif', fontSize: '14px', color: '#ffffff',
-    }).setOrigin(0.5).setDepth(6);
+    const frame = item.type === 'sofa' ? 'sofa' : item.type === 'desk' || item.name === 'Bureau' ? 'desk' : 'table';
+    scene.add.image(bounds.centerX, bounds.centerY, OFFICE.furnitureKey, frame)
+      .setDisplaySize(bounds.width, bounds.height).setDepth(5);
+  }
+  for (const item of map.getObjectLayer('Decor')?.objects ?? []) {
+    const bounds = rectangle(item);
+    const frame = item.type === 'clock' ? 1 : item.type === 'plant' ? 6 : 0;
+    scene.add.image(bounds.centerX, bounds.centerY, OFFICE.decorKey, frame)
+      .setDisplaySize(bounds.width, bounds.height).setDepth(6);
   }
 
   const zones: OfficeZone[] = (map.getObjectLayer('Zones')?.objects ?? []).map((object) => {

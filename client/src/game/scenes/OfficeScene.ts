@@ -25,6 +25,9 @@ export class OfficeScene extends Phaser.Scene {
     this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, this.fail, this);
     this.load.tilemapTiledJSON(OFFICE.mapKey, OFFICE.mapUrl);
     this.load.image(OFFICE.tilesetKey, OFFICE.tilesetUrl);
+    this.load.image(OFFICE.furnitureKey, OFFICE.furnitureUrl);
+    this.load.spritesheet(OFFICE.decorKey, OFFICE.decorUrl, { frameWidth: 32, frameHeight: 32 });
+    this.load.spritesheet(OFFICE.avatarKey, OFFICE.avatarUrl, { frameWidth: 32, frameHeight: 48 });
   }
 
   create() {

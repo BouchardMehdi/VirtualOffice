@@ -15,9 +15,10 @@ for (let x = 0; x < width; x++) { wall(x, 0, 5); wall(x, height - 1, 5); }
 for (let y = 0; y < height; y++) { wall(0, y, 6); wall(width - 1, y, 6); }
 for (let y = 1; y < height - 1; y++) if (y !== 7 && y !== 8) wall(10, y, 6);
 for (let x = 11; x < width - 1; x++) if (x !== 18 && x !== 19) wall(x, 10, 5);
-for (const [x, y] of [[0, 0], [25, 0], [0, 17], [25, 17], [10, 0], [10, 17], [10, 10]]) wall(x, y, 7);
-doors[7 * width + 10] = 9;
-doors[8 * width + 10] = 12;
+for (const [x, y] of [[0, 0], [25, 0], [0, 17], [25, 17], [10, 0], [10, 17], [10, 10]]) wall(x, y, 11);
+// Le seuil tourne de 90° pour suivre le mur vertical et montrer un passage ouvert.
+doors[7 * width + 10] = 0x20000000 + 12;
+doors[8 * width + 10] = 0x20000000 + 12;
 doors[10 * width + 18] = 12;
 doors[10 * width + 19] = 12;
 
@@ -28,8 +29,8 @@ function object(name, x, y, w, h, extra = {}) {
 const furniture = [
   object('Canapé', 96, 96, 128, 48, { type: 'sofa' }),
   object('Table', 128, 192, 64, 48),
-  object('Bureau', 448, 96, 96, 48),
-  object('Bureau', 640, 96, 96, 48),
+  object('Bureau', 448, 96, 96, 48, { type: 'desk' }),
+  object('Bureau', 640, 96, 96, 48, { type: 'desk' }),
   object('Table', 480, 400, 192, 64),
 ];
 const collisions = [];
@@ -47,7 +48,7 @@ const zone = (name, label, x, y, w, h) => object(name, x, y, w, h, {
 const map = {
   compressionlevel: -1, width, height, infinite: false, orientation: 'orthogonal',
   renderorder: 'right-down', tilewidth: tileSize, tileheight: tileSize,
-  type: 'map', version: '1.10', tiledversion: '1.11.0', nextlayerid: 8,
+  type: 'map', version: '1.10', tiledversion: '1.11.0', nextlayerid: 9,
   layers: [
     tileLayer(1, 'Floor', floor), tileLayer(2, 'Walls', walls), tileLayer(3, 'Doors', doors),
     objectLayer(4, 'Furniture', furniture), objectLayer(5, 'Collision', collisions, false),
@@ -57,10 +58,16 @@ const map = {
       zone('open_space', 'Open space', 352, 32, 448, 288),
       zone('meeting_room', 'Réunion', 352, 352, 448, 192),
     ]),
+    objectLayer(8, 'Decor', [
+      object('Tableau', 416, 0, 32, 32, { type: 'picture' }),
+      object('Horloge', 592, 0, 32, 32, { type: 'clock' }),
+      object('Plante de bureau', 516, 98, 28, 28, { type: 'plant' }),
+      object('Plante de bureau', 708, 98, 28, 28, { type: 'plant' }),
+    ]),
   ],
-  tilesets: [{ firstgid: 1, name: 'virtualoffice_base', tilewidth: 32, tileheight: 32,
-    tilecount: 16, columns: 4, margin: 0, spacing: 0,
-    image: '../tilesets/virtualoffice_base_tileset_32x32.png', imagewidth: 128, imageheight: 128 }],
+  tilesets: [{ firstgid: 1, name: 'virtualoffice_custom_tiles', tilewidth: 32, tileheight: 32,
+    tilecount: 32, columns: 8, margin: 0, spacing: 0,
+    image: '../custom/tiles/office_tileset_32x32.png', imagewidth: 256, imageheight: 128 }],
 };
 map.nextobjectid = nextId;
 const directory = new URL('../client/public/assets/maps/', import.meta.url);

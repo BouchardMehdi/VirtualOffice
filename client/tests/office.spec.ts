@@ -80,7 +80,7 @@ test('ZQSD, flèches, diagonales et suivi du nom', async ({ page }) => {
     const after = await snapshot(page);
     expect((after[axis] - before[axis]) * sign).toBeGreaterThan(10);
     expect(Math.abs(after.labelX - after.x)).toBeLessThan(3);
-    expect(Math.abs(after.labelY - (after.y - 22))).toBeLessThan(3);
+    expect(Math.abs(after.labelY - (after.y - 46))).toBeLessThan(3);
   }
   await page.keyboard.down('d');
   await page.keyboard.down('z');

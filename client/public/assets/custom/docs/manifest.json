@@ -1,0 +1,25 @@
+{
+  "tile_size": 32,
+  "furniture_cell_size": 64,
+  "avatar_frame": {
+    "width": 32,
+    "height": 48,
+    "columns": 3,
+    "rows": 4
+  },
+  "recommended_tiled_layers": [
+    "Floor",
+    "FloorDecor",
+    "Walls",
+    "Windows",
+    "Doors",
+    "FurnitureBottom",
+    "Furniture",
+    "FurnitureTop",
+    "Plants",
+    "WallDecor",
+    "Collision",
+    "Spawn",
+    "Zones"
+  ]
+}
