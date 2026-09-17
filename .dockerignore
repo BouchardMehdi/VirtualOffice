@@ -3,5 +3,7 @@
 .env.*
 **/node_modules
 **/dist
+**/test-results
+**/playwright-report
 **/*.log
 server/src/generated

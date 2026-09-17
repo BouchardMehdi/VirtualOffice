@@ -45,8 +45,25 @@ input { width: 100%; min-width: 0; border: 1px solid #93a89d; border-radius: 6px
 .secondary-button { background: #e4ece7; color: #153f34; }
 .secondary-button:hover:not(:disabled) { background: #d1e2d7; }
 .actions { display: flex; flex-wrap: wrap; gap: 1rem; }
-.workspace-placeholder { margin-top: 2rem; padding: 2rem; border: 1px dashed #8da99a; border-radius: 12px; }
-.workspace-placeholder p { margin-bottom: 0; color: #4d6259; }
+.workspace { width: min(100%, 1180px); margin: 0 auto; padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.workspace > .eyebrow { margin: 0 0 0.35rem; }
+.workspace > h1 { font-size: 2rem; margin-bottom: 1rem; }
+.workspace .connection { margin-top: 1rem; padding: 1rem 1.25rem; }
+.office { overflow: hidden; border: 1px solid #b5c7bc; border-radius: 12px; background: #fff; }
+.office-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.75rem 1rem; }
+.office-toolbar p { margin: 0; }
+.office-toolbar__actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.office-fullscreen-error { margin: 0; padding: 0.5rem 1rem; color: #a23420; }
+.office:fullscreen { display: flex; flex-direction: column; width: 100%; height: 100%; border: 0; border-radius: 0; }
+.office:fullscreen .office-game { flex: 1; min-height: 0; height: auto; }
+.office:fullscreen .office-toolbar, .office:fullscreen .office-controls { flex-shrink: 0; }
+.office-game { position: relative; height: clamp(320px, 62vh, 640px); background: #273b32; }
+.office-game__surface { width: 100%; height: 100%; }
+.office-game canvas { display: block; image-rendering: pixelated; }
+.office-game canvas:focus-visible { outline: 3px solid #71d5b0; outline-offset: -3px; }
+.office-game__overlay { position: absolute; z-index: 1; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; background: #f5f7f6; }
+.office-controls { margin: 0; padding: 0.85rem 1rem; font-size: 0.875rem; color: #40594c; }
+kbd { font: inherit; border: 1px solid #93a89d; border-radius: 3px; padding: 0.05rem 0.3rem; }
 @media (max-width: 850px) {
   .login-layout { grid-template-columns: 1fr; max-width: 620px; gap: 2rem; }
 }

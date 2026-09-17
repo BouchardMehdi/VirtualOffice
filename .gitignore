@@ -8,3 +8,5 @@ dist/
 server/src/generated/
 .DS_Store
 Thumbs.db
+test-results/
+playwright-report/

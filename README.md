@@ -3,9 +3,9 @@
 VirtualOffice est un prototype scolaire de bureau virtuel 2D : se connecter,
 retrouver ses collègues, se déplacer et discuter en s'approchant d'un groupe.
 
-**Les parties 1 et 2 sont implémentées** : socle Docker, base PostgreSQL,
-authentification et espace protégé. La carte 2D, les déplacements et le chat
-viendront aux étapes suivantes. Le nom du projet est **VirtualOffice**.
+**Les parties 1, 2 et 3 sont implémentées** : socle Docker, base PostgreSQL,
+authentification et bureau 2D jouable sur une carte de test. Le multijoueur et
+le chat viendront aux étapes suivantes. Le nom du projet est **VirtualOffice**.
 
 ## Périmètre de la V1
 
@@ -18,11 +18,12 @@ permanent des messages sont hors périmètre.
 
 ## Stack
 
-- Client : React, TypeScript, Vite et React Router.
+- Client : React, TypeScript, Vite, React Router et Phaser 3.90.
 - Serveur : Node.js, Express, TypeScript, JWT et bcrypt.
 - Base de données : PostgreSQL 17 et Prisma 7.
 - Environnement local : Docker et Docker Compose.
-- Étapes suivantes : Phaser, Tiled et Socket.IO.
+- Carte : format JSON Tiled avec tileset intégré.
+- Étape suivante : Socket.IO pour la présence et les déplacements en temps réel.
 
 ## Démarrage
 
@@ -117,6 +118,68 @@ La limite des mots de passe respecte les
 La vérification des JWT utilise les options de
 [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken).
 
+## Bureau 2D — partie 3
+
+Après connexion à `/workspace`, l'avatar provisoire apparaît dans l'espace
+détente avec le prénom et le nom du compte. La carte contient aussi un open space
+et une salle de réunion. Les sols, murs et portes utilisent le pack fourni ;
+les cercles et rectangles représentent l'avatar et le mobilier provisoires.
+
+- Déplacement : **ZQSD** ou **flèches directionnelles**.
+- Cliquer dans le bureau pour lui donner le focus ; **Tab** permet d'en sortir.
+- Le bouton **Plein écran** agrandit le bureau en conservant les commandes visibles ;
+  il devient **Quitter le plein écran**. Avec le focus dans le bureau, **F** bascule
+  entre les deux modes et **Échap** quitte le plein écran. Ces raccourcis ignorent
+  les champs de saisie. Le bouton est désactivé si le navigateur ne permet pas
+  le plein écran ([API Fullscreen](https://fullscreen.spec.whatwg.org/)).
+- Les murs et le mobilier bloquent le joueur. Les portes ouvertes laissent
+  passer. La vitesse est identique en ligne droite et en diagonale.
+- Les touches n'agissent plus sur l'avatar lorsqu'un autre élément a le focus,
+  lorsque la fenêtre perd le focus ou lorsque l'onglet devient masqué.
+- Le lieu affiché change avec la pièce. Le canvas s'adapte à son espace
+  d'affichage ; la cible reste l'ordinateur avec clavier.
+- Un échec de chargement de la carte ou de son image permet de réessayer.
+- Phaser est chargé à l'entrée du bureau et détruit à la déconnexion. Un
+  rafraîchissement replace l'avatar au point de départ.
+
+Cette étape est **locale et solo** : les autres comptes ne sont pas encore
+visibles, aucune position n'est envoyée au serveur et le chat n'est pas présent.
+
+### Assets et carte Tiled
+
+- Carte de test : `client/public/assets/maps/office-test.json`.
+- Image et description du tileset : `client/public/assets/tilesets/`.
+- Provenance du pack fourni : [CREDITS.md](CREDITS.md).
+- Chemins de chargement et vitesse : `client/src/game/config/office.ts`.
+
+La carte est un **exemple technique**, généré pour vérifier l'intégration.
+Elle s'ouvre directement dans Tiled ; la carte finale sera réalisée par l'équipe.
+`node scripts/create-test-map.mjs` régénère et **écrase `office-test.json`**.
+Cette commande n'est jamais exécutée automatiquement au démarrage ou au build.
+
+Pour remplacer cette carte dans Tiled :
+
+1. Utiliser une carte orthogonale finie, avec une grille 32 × 32.
+2. Ajouter le tileset puis l'intégrer à la carte (« Embed Tileset ») avant l'export
+   JSON. Le `.tsx` fourni est une description Tiled, pas un composant React.
+   Le chargeur actuel utilise un seul tileset nommé `virtualoffice_base`.
+3. Créer les calques de tuiles `Floor`, `Walls` et `Doors`, exportés en tableaux
+   JSON non compressés.
+4. Ajouter les rectangles non pivotés des murs et meubles solides dans le calque
+   d'objets `Collision`. Les portes ouvertes ne doivent pas avoir de collision.
+   Les tuiles de debug ne créent pas d'obstacle par elles-mêmes.
+5. Ajouter dans le calque d'objets `Spawn` un point `spawn_lounge` dans l'espace
+   détente, hors de tout obstacle.
+6. Facultativement, ajouter des rectangles dans le calque d'objets `Zones`, avec
+   une propriété texte `label`. Le calque d'objets `Furniture` dessine uniquement
+   des rectangles provisoires ; leurs obstacles doivent figurer dans `Collision`.
+7. Placer le JSON dans `public/assets/maps/`, les images dans `public/assets/tilesets/`
+   et adapter `game/config/office.ts` si les chemins ou le nom du tileset changent.
+
+Les collisions sont distinctes du rendu : modifier une décoration ne modifie
+pas automatiquement les obstacles. L'intégration utilise Arcade Physics et le
+[chargeur de tilemaps Phaser](https://docs.phaser.io/api-documentation/class/loader-loaderplugin).
+
 ## Développer en local
 
 Prérequis supplémentaires : Node.js 22.12+ sur la branche 22, ou Node.js 24+,
@@ -173,6 +236,28 @@ exécutés. Les tests contrôlent les comptes, les hashes, le login, `/me`, les
 profils publics, les entrées invalides, les jetons expirés ou altérés et l'absence
 d'inscription. Ils ne modifient ni ne suppriment les comptes.
 
+Les tests du bureau utilisent Chromium via Playwright. Après `npm install`,
+avec `.env` préparé, le backend et la base démarrés sur leurs ports habituels
+(par exemple `docker compose up -d database backend`) :
+
+```sh
+npm exec --workspace @virtualoffice/client -- playwright install chromium
+npm run test:game
+```
+
+Playwright démarre son propre client sur le port **5174**, qui doit être libre.
+Il utilise Alice et le mot de passe `DEMO_PASSWORD` de `.env`. Les six scénarios
+vérifient la connexion et le démontage du jeu, les touches et diagonales, les
+murs et portes, le mobilier et le focus, les limites, puis la reprise après une
+erreur de chargement. Les résultats et captures sont dans `client/test-results/`
+(ignoré par Git). La lecture des coordonnées de l'avatar est exposée uniquement
+en mode Vite `test`.
+
+Pour une vérification manuelle : se connecter, essayer les huit touches, longer
+un mur puis franchir les deux portes, heurter un meuble et cliquer hors du jeu
+avant d'y revenir. Se déconnecter puis se reconnecter doit afficher un seul
+bureau, avec le bon nom et l'avatar au départ.
+
 La route `/api/health` interroge réellement PostgreSQL via Prisma : HTTP 200
 avec `status: "ok"` et `database: "connected"`, ou HTTP 503 avec
 `database: "unavailable"`. L'espace connecté permet de refaire cette vérification.
@@ -210,15 +295,20 @@ Les variables d'initialisation PostgreSQL s'appliquent à un volume neuf ; chang
 ```text
 VirtualOffice/
 ├── client/
+│   ├── public/assets/            # carte JSON et tileset fourni
 │   ├── src/
 │   │   ├── auth/AuthProvider.tsx
 │   │   ├── components/ConnectionStatus.tsx
+│   │   ├── components/OfficeGame.tsx
+│   │   ├── game/                 # scène Phaser, carte, avatar et clavier
 │   │   ├── pages/Login/
 │   │   ├── pages/Workspace/
 │   │   ├── services/
 │   │   ├── types/auth.ts
 │   │   ├── App.tsx
 │   │   └── main.tsx
+│   ├── tests/office.spec.ts
+│   ├── playwright.config.ts
 │   ├── Dockerfile
 │   └── vite.config.ts
 ├── server/
@@ -236,6 +326,8 @@ VirtualOffice/
 │   ├── Dockerfile
 │   └── prisma.config.ts
 ├── scripts/setup-env.mjs
+├── scripts/create-test-map.mjs
+├── CREDITS.md
 ├── .env.example
 ├── docker-compose.yml
 ├── package.json
