@@ -6,6 +6,7 @@ const users = [
   { firstName: 'Alice', lastName: 'Martin', email: 'alice@virtualoffice.test', role: 'USER' },
   { firstName: 'Thomas', lastName: 'Bernard', email: 'thomas@virtualoffice.test', role: 'USER' },
   { firstName: 'Julie', lastName: 'Dupont', email: 'julie@virtualoffice.test', role: 'USER' },
+  { firstName: 'Emma', lastName: 'Leroy', email: 'emma@virtualoffice.test', role: 'USER' },
   { firstName: 'Paul', lastName: 'Admin', email: 'admin@virtualoffice.test', role: 'ADMIN' },
 ] as const;
 
@@ -21,7 +22,7 @@ try {
       create: { ...user, passwordHash: await bcrypt.hash(password, 10) },
     });
   }
-  console.log('Les 4 comptes de démonstration sont disponibles. Les comptes existants sont conservés.');
+  console.log(`Les ${users.length} comptes de démonstration sont disponibles. Les comptes existants sont conservés.`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : 'Échec du seed.');
   process.exitCode = 1;

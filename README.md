@@ -89,6 +89,7 @@ Si cette variable est personnalisée avant le premier seed, utiliser sa valeur.
 | Alice Martin | `alice@virtualoffice.test` | USER |
 | Thomas Bernard | `thomas@virtualoffice.test` | USER |
 | Julie Dupont | `julie@virtualoffice.test` | USER |
+| Emma Leroy | `emma@virtualoffice.test` | USER |
 | Paul Admin | `admin@virtualoffice.test` | ADMIN |
 
 Le seed ajoute uniquement les comptes absents. Il ne réinitialise ni les mots
@@ -367,7 +368,8 @@ npm run test:game
 
 Playwright démarre son propre backend sur **4001** et son client sur **5174** ;
 ces deux ports doivent être libres. Ce bureau de test est séparé de la démo sur 4000.
-Il utilise les quatre comptes de démonstration et le mot de passe `DEMO_PASSWORD` de `.env`. Les quinze scénarios
+Il utilise Alice, Thomas, Julie et Paul parmi les cinq comptes de démonstration,
+avec le mot de passe `DEMO_PASSWORD` de `.env`. Les quinze scénarios
 vérifient la connexion et le démontage du jeu, les touches et diagonales, les
 murs et portes, le mobilier et le focus, les limites, puis la reprise après une
 erreur de chargement, ainsi que deux sessions avec déplacement, rafraîchissement,

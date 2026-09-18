@@ -39,12 +39,15 @@ function me(token?: string) {
   return fetch(`${base}/me`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
 }
 
-test('les quatre comptes existent avec des mots de passe bcrypt et un administrateur', async () => {
-  for (const name of ['alice', 'thomas', 'julie', 'admin']) {
+test('les cinq comptes existent, peuvent se connecter et ont des mots de passe bcrypt', async () => {
+  for (const name of ['alice', 'thomas', 'julie', 'emma', 'admin']) {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: `${name}@virtualoffice.test` } });
     assert.notEqual(user.passwordHash, password);
     assert.equal(await bcrypt.compare(password, user.passwordHash), true);
     assert.equal(user.role, name === 'admin' ? 'ADMIN' : 'USER');
+    const response = await login({ email: user.email, password });
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).user.id, user.id);
   }
 });
 
