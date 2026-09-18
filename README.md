@@ -227,8 +227,9 @@ position refusée provoque une correction locale. Cela convient au POC : ce n'es
 pas une simulation physique complète côté serveur, ni une protection anti-triche
 de jeu compétitif.
 
-Le contrat des événements est dans `server/src/realtime/protocol.ts`, importé
-uniquement comme types par le client. Vite relaie `/socket.io` (HTTP et WebSocket)
+Le contrat des événements et les distances de proximité sont dans
+`server/src/realtime/protocol.ts`, partagé avec le client sans dépendance serveur.
+Vite relaie `/socket.io` (HTTP et WebSocket)
 vers le même backend que `/api` ; aucun port supplémentaire n'est nécessaire.
 Le bureau, ses écouteurs et son socket sont détruits lorsqu'on quitte la page.
 
@@ -239,6 +240,13 @@ Il reste disponible en plein écran et passe sous la carte sur un écran étroit
 Se rapprocher d'un collègue ouvre automatiquement la conversation ; s'éloigner
 de tout le groupe désactive la saisie. **Entrée** ou **Envoyer** envoie le message.
 ZQSD, les flèches et F n'agissent pas sur le jeu pendant la saisie.
+
+Un cercle discret montre le rayon de discussion autour de son avatar. Lorsqu'un
+groupe est confirmé par le serveur, ses membres ont un anneau doré aux pieds et
+leur propre cercle de portée. Les cercles gardent leur taille individuelle ;
+les pointillés indiquent la marge de sortie à 120 px. Ces distances sont
+indicatives : un mur peut toujours empêcher la discussion. Les autres groupes
+ne sont pas marqués. Les repères disparaissent pendant une coupure réseau.
 
 - Entrée à **96 px** d'au moins un participant ; un lien existant subsiste jusqu'à
   **120 px**, tant qu'aucun mur ne coupe la ligne entre les deux avatars.
@@ -510,7 +518,8 @@ les rectangles des murs ; les passages ouverts ne coupent pas ce segment.
 Une marge entre la distance d'entrée et la distance de sortie doit éviter
 les entrées et sorties répétées lorsqu'un avatar reste à la limite de la zone.
 La distance de sortie est de 120 px, contre 96 px à l'entrée. Ces valeurs sont
-configurables dans `server/src/realtime/chat.ts`.
+configurables dans `CHAT_PROXIMITY`, dans `server/src/realtime/protocol.ts`,
+pour conserver les mêmes distances côté serveur et côté affichage.
 
 ### Conservation temporaire
 

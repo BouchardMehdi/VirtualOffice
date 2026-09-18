@@ -1,4 +1,5 @@
-// Contrat partagé par import de types uniquement côté client.
+// Contrat partagé sans dépendance serveur : types et distances du chat.
+export const CHAT_PROXIMITY = { enter: 96, leave: 120 } as const;
 export type Position = { x: number; y: number };
 export type Presence = Position & { id: string; userId: string; name: string };
 export type ChatMember = Pick<Presence, 'id' | 'name'>;

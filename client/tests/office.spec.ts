@@ -132,10 +132,12 @@ test('deux comptes se voient, bougent, se reconnectent et quittent sans fantôme
     await expect.poll(async () => (await others(alice)).length).toBe(1);
     await thomasContext.setOffline(true);
     await expect(thomas.locator('.office-presence')).toContainText('reconnexion', { timeout: 15_000 });
+    await expect.poll(() => thomas.evaluate(() => window.__virtualofficeTest?.proximity()?.participants.length)).toBe(0);
     await expect(thomas.getByLabel('Message au groupe')).toBeDisabled();
     await expect.poll(async () => (await others(alice)).length, { timeout: 15_000 }).toBe(0);
     await thomasContext.setOffline(false);
     await expect.poll(() => thomas.evaluate(() => window.__virtualofficeTest?.network().online), { timeout: 15_000 }).toBe(true);
+    await expect.poll(() => thomas.evaluate(() => window.__virtualofficeTest?.proximity()?.participants.length ?? 0)).toBeGreaterThan(0);
     await expect.poll(async () => (await others(alice)).length).toBe(1);
     await thomas.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect.poll(async () => (await others(alice)).length).toBe(0);
@@ -148,13 +150,18 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
   const contexts = await Promise.all([browser.newContext(), browser.newContext(), browser.newContext()]);
   const [alice, thomas, julie] = await Promise.all(contexts.map(context => context.newPage()));
   const messages = (page: Page) => page.getByRole('log', { name: 'Messages du groupe' });
+  const proximity = (page: Page) => page.evaluate(() => window.__virtualofficeTest?.proximity());
   try {
     await signIn(alice);
     await ready(alice);
     await expect(alice.getByLabel('Message au groupe')).toBeDisabled();
+    await expect.poll(async () => (await proximity(alice))?.participants.map(participant => participant.grouped)).toEqual([false]);
+    expect(await proximity(alice)).toMatchObject({ enterRadius: 96, leaveRadius: 120 });
     await signIn(thomas, 'thomas');
     await ready(thomas);
     await expect(alice.locator('.chat-members')).toContainText('2 participants');
+    await expect.poll(async () => (await proximity(alice))?.participants.map(participant => participant.grouped)).toEqual([true, true]);
+    await alice.screenshot({ path: testInfo.outputPath('proximite-groupe.png'), fullPage: true });
     await expect(alice.getByRole('status', { name: 'Événements de conversation' })).toContainText('Thomas Bernard a rejoint la conversation.');
     const before = await snapshot(alice);
     await alice.getByLabel('Message au groupe').fill('Bonjour Thomas ! ');
@@ -174,6 +181,12 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
     await thomas.locator('canvas').click();
     await travel(thomas, 's', state => state.y >= 490);
     await expect(alice.getByLabel('Message au groupe')).toBeDisabled();
+    await expect.poll(async () => (await proximity(alice))?.participants.map(participant => participant.grouped)).toEqual([false]);
+    await expect.poll(async () => {
+      const position = await snapshot(thomas);
+      const circle = (await proximity(thomas))?.participants[0];
+      return circle ? Math.hypot(circle.x - position.x, circle.y - position.y) : Infinity;
+    }).toBeLessThan(3);
     await expect(messages(alice)).not.toContainText('Bonjour Thomas');
     await travel(thomas, 'z', state => state.y <= 360);
     await expect(alice.getByLabel('Message au groupe')).toBeEnabled();
@@ -181,6 +194,8 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
     await signIn(julie, 'julie');
     await ready(julie);
     await expect(alice.locator('.chat-members')).toContainText('3 participants');
+    await expect.poll(async () => (await proximity(alice))?.participants.map(participant => participant.grouped)).toEqual([true, true, true]);
+    expect(await proximity(alice)).toMatchObject({ enterRadius: 96, leaveRadius: 120 });
     await expect(alice.getByRole('status', { name: 'Événements de conversation' })).toContainText('Julie Dupont a rejoint la conversation.');
     await expect(messages(julie)).not.toContainText('Bonjour Thomas');
     await julie.getByLabel('Message au groupe').fill('Bonjour à vous deux !');

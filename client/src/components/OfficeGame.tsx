@@ -150,6 +150,10 @@ export function OfficeGame({ playerName }: { playerName: string }) {
       {' '}Appuie sur <kbd>Tab</kbd> pour quitter le bureau au clavier.
       {fullscreenSupported && <> <kbd>F</kbd> : plein écran / retour · <kbd>Échap</kbd> : quitter le plein écran.</>}
       {' '}Ton repère est vert, ceux des autres sont bleus.
+      <span className="office-proximity-legend">
+        <span className="office-group-symbol" aria-hidden="true" /> Anneaux dorés : ton groupe.
+        {' '}Cercle : rayon de discussion · Pointillés : marge avant séparation. Les murs bloquent le chat.
+      </span>
     </p>
   </section>;
 }

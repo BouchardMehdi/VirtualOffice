@@ -5,7 +5,8 @@ import type { ChatRequest } from '../../../server/src/realtime/protocol';
 
 declare global {
   interface Window {
-    __virtualofficeTest?: { snapshot: () => PlayerSnapshot | null; network: () => ReturnType<OfficeScene['networkSnapshot']> };
+    __virtualofficeTest?: { snapshot: () => PlayerSnapshot | null; network: () => ReturnType<OfficeScene['networkSnapshot']>;
+      proximity: () => ReturnType<OfficeScene['proximitySnapshot']> };
   }
 }
 
@@ -22,7 +23,8 @@ export function createOfficeGame(parent: HTMLElement, playerName: string, token:
   const resize = new ResizeObserver(() => { if (game.isBooted) game.scale.refresh(); });
   resize.observe(parent);
   // Lecture seule, uniquement pour les tests du jeu ; aucun contrôle de position exposé.
-  const probe = { snapshot: () => scene.snapshot(), network: () => scene.networkSnapshot() };
+  const probe = { snapshot: () => scene.snapshot(), network: () => scene.networkSnapshot(),
+    proximity: () => scene.proximitySnapshot() };
   if (import.meta.env.MODE === 'test') window.__virtualofficeTest = probe;
 
   return {

@@ -1,9 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { canHear } from './map.js';
+import { CHAT_PROXIMITY } from './protocol.js';
 import type { ChatMember, ChatMessage, ChatResult, ChatState, Presence } from './protocol.js';
 
-export const CHAT_ENTER_RADIUS = 96;
-export const CHAT_LEAVE_RADIUS = 120;
+export const CHAT_ENTER_RADIUS = CHAT_PROXIMITY.enter;
+export const CHAT_LEAVE_RADIUS = CHAT_PROXIMITY.leave;
 export const CONVERSATION_TTL_MS = 5 * 60 * 1_000;
 export const MAX_MESSAGE_LENGTH = 500;
 export const MAX_MESSAGES = 100;
