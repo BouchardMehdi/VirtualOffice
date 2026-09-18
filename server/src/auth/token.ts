@@ -3,7 +3,7 @@ import { env } from '../config/env.js';
 
 export const TOKEN_ISSUER = 'virtualoffice';
 export const TOKEN_AUDIENCE = 'virtualoffice-client';
-export const TOKEN_TTL_SECONDS = 60 * 60;
+export const TOKEN_TTL_SECONDS = env.jwtTtlHours * 60 * 60;
 
 export function createToken(userId: string) {
   const expiresAt = Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS;

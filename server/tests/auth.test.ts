@@ -60,6 +60,9 @@ test('connexion et /me renvoient uniquement le profil public', async () => {
   assert.equal(session.user.id, aliceId);
   assert.equal(session.user.role, 'USER');
   assert.ok(session.expiresAt > Date.now());
+  const claims = jwt.verify(session.token, env.jwtSecret) as jwt.JwtPayload;
+  assert.equal(claims.exp! - claims.iat!, env.jwtTtlHours * 3600);
+  assert.equal(session.expiresAt, claims.exp! * 1000);
   const current = await me(session.token);
   assert.equal(current.status, 200);
   assert.deepEqual(await current.json(), { user: session.user, expiresAt: session.expiresAt });

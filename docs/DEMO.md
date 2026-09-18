@@ -69,7 +69,7 @@ les recharger et se rapprocher dans les cinq minutes.
 | Un service est arrêté. | Relancer `docker compose up -d --wait` ; consulter `docker compose logs --tail 50` si nécessaire. |
 | Docker affiche `invalid file request Dockerfile` dans OneDrive. | Lancer `npm run demo:start` pour construire depuis une copie temporaire des sources et démarrer la démo. Node.js et Git sont nécessaires. |
 | Le chat est désactivé. | Se rapprocher d'un collègue sans mur entre les avatars et vérifier la connexion. |
-| La session a expiré. | Se reconnecter ; les JWT durent une heure. |
+| La session a expiré. | Se reconnecter ; les sessions durent 12 heures par défaut. Modifier `JWT_TTL_HOURS` dans `.env`, relancer les services et se reconnecter pour appliquer une autre durée. |
 | Le port PostgreSQL est occupé. | Suivre la configuration `POSTGRES_PORT` et `DATABASE_URL` du README. |
 
 Pour arrêter : `docker compose down`. Cette commande conserve les données.

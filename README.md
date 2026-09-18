@@ -103,7 +103,8 @@ de passe ni les autres informations des comptes existants. Modifier
 - `GET /api/auth/me` attend `Authorization: Bearer <token>` et renvoie le profil
   public lu en base ainsi que `expiresAt`.
 - Les mots de passe sont hashés avec bcrypt. Les hashes ne sont jamais renvoyés.
-- Les JWT expirent après une heure. Le serveur vérifie leur signature, leur
+- Les JWT expirent après **12 heures par défaut**, configurables via
+  `JWT_TTL_HOURS` dans `.env` (entier de 1 à 168). Le serveur vérifie leur signature, leur
   algorithme, leur émetteur, leur audience et leur expiration, puis retrouve
   l'utilisateur en base. Le client ne choisit pas son identité ou son rôle.
 - Le JWT est stocké dans `sessionStorage`, par onglet. Le client vérifie `/me`
@@ -119,6 +120,12 @@ Pour ce POC, il n'y a ni renouvellement automatique ni liste de révocation des
 JWT : un jeton copié avant la déconnexion reste valide jusqu'à son expiration.
 Le stockage par onglet est accessible au JavaScript de l'application.
 Il n'existe pas de route ni de page d'inscription.
+
+Pour prolonger les sessions de la démo, modifier par exemple `JWT_TTL_HOURS=24`
+dans `.env`, puis relancer `docker compose up -d --wait` (ou redémarrer le serveur
+hors Docker). La nouvelle durée s'applique aux prochaines connexions : se
+déconnecter puis se reconnecter dans chaque onglet. Les jetons déjà émis gardent
+leur date d'expiration initiale. Le navigateur et Socket.IO suivent cette même date.
 
 La limite des mots de passe respecte les
 [72 octets traités par bcrypt](https://github.com/kelektiv/node.bcrypt.js/).
@@ -417,6 +424,7 @@ uniquement la configuration d'exemple de cette démonstration locale.
 | `PORT` | Port du serveur hors Docker ; 4000 par défaut. |
 | `CLIENT_ORIGIN` | Origine CORS ; `http://localhost:5173` par défaut. |
 | `JWT_SECRET` | Secret aléatoire généré par le script setup, au moins 32 octets. |
+| `JWT_TTL_HOURS` | Durée des nouvelles sessions en heures, 12 par défaut ; entier entre 1 et 168. |
 | `DEMO_PASSWORD` | Mot de passe des comptes absents lors du seed. |
 | `API_PROXY_TARGET` | Cible du proxy Vite hors Docker ; `http://localhost:4000`. |
 

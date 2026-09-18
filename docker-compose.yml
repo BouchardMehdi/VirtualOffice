@@ -28,6 +28,7 @@ services:
       PORT: "4000"
       CLIENT_ORIGIN: ${CLIENT_ORIGIN:-http://localhost:5173}
       JWT_SECRET: ${JWT_SECRET:?Executer npm run setup avant le demarrage}
+      JWT_TTL_HOURS: ${JWT_TTL_HOURS:-12}
       DEMO_PASSWORD: ${DEMO_PASSWORD:?Executer npm run setup avant le demarrage}
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@database:5432/${POSTGRES_DB}?schema=public
     ports:
