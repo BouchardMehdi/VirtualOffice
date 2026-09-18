@@ -10,7 +10,7 @@ function AppContent() {
       <Link className="brand" to="/">VirtualOffice<span aria-hidden="true">.</span></Link>
       {session
         ? <button className="secondary-button" onClick={() => signOut()}>Se déconnecter</button>
-        : <span className="demo-label">Démo en construction</span>}
+        : <span className="demo-label">Démo locale</span>}
     </header>
     {status === 'loading' ? <main><p role="status">Vérification de ta session…</p></main>
       : status === 'error' ? <main>

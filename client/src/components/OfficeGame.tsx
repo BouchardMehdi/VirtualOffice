@@ -10,6 +10,8 @@ export function OfficeGame({ playerName }: { playerName: string }) {
   const [network, setNetwork] = useState<NetworkStatus>('connecting');
   const [presence, setPresence] = useState(0);
   const [conversation, setConversation] = useState<ChatState>(null);
+  const previousConversation = useRef<ChatState>(null);
+  const [conversationEvents, setConversationEvents] = useState<string[]>([]);
   const game = useRef<{ destroy: () => void; sendChat: (request: ChatRequest) => Promise<ChatResult> } | undefined>(undefined);
   const office = useRef<HTMLElement>(null);
   const host = useRef<HTMLDivElement>(null);
@@ -71,6 +73,8 @@ export function OfficeGame({ playerName }: { playerName: string }) {
     setNetwork('connecting');
     setPresence(0);
     setConversation(null);
+    previousConversation.current = null;
+    setConversationEvents([]);
 
     import('../game/createOfficeGame').then(({ createOfficeGame }) => {
       if (!active) return;
@@ -80,9 +84,28 @@ export function OfficeGame({ playerName }: { playerName: string }) {
         onReady: () => { if (active) setStatus('ready'); },
         onAreaChange: (value) => { if (active) setArea(value); },
         onError: (message) => { if (active) { setError(message); setStatus('error'); } },
-        onNetwork: value => { if (active) setNetwork(value); },
+        onNetwork: value => {
+          if (!active) return;
+          setNetwork(value);
+          if (value !== 'online') { previousConversation.current = null; setConversationEvents([]); }
+        },
         onPresence: total => { if (active) setPresence(total); },
-        onChat: value => { if (active) setConversation(value); },
+        onChat: value => {
+          if (!active) return;
+          const previous = previousConversation.current;
+          if (previous?.id !== value?.id) {
+            const before = previous?.members ?? [];
+            const after = value?.members ?? [];
+            setConversationEvents([
+              ...before.filter(member => !after.some(next => next.id === member.id))
+                .map(member => `${member.name} a quitté la conversation.`),
+              ...after.filter(member => !before.some(prior => prior.id === member.id))
+                .map(member => `${member.name} a rejoint la conversation.`),
+            ]);
+          }
+          previousConversation.current = value;
+          setConversation(value);
+        },
         onSessionExpired: () => { if (active) signOut('Ta session a expiré ou est invalide. Reconnecte-toi.'); },
       });
       game.current = instance;
@@ -119,6 +142,7 @@ export function OfficeGame({ playerName }: { playerName: string }) {
       </div>}
     </div>
     <ChatPanel key={conversation?.id ?? 'no-conversation'} conversation={conversation} online={network === 'online'}
+      events={conversationEvents}
       send={request => game.current?.sendChat(request) ?? Promise.resolve({ ok: false, error: 'Le bureau est déconnecté.' })} />
     </div>
     <p id="office-controls" className="office-controls">

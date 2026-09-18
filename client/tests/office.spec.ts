@@ -1,46 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import type { PlayerSnapshot } from '../src/game/config/office';
-
-async function signIn(page: Page, account = 'alice') {
-  await page.goto('/login');
-  await page.getByLabel('Adresse email').fill(`${account}@virtualoffice.test`);
-  await page.getByLabel('Mot de passe').fill(process.env.DEMO_PASSWORD!);
-  await page.getByRole('button', { name: 'Entrer dans le bureau' }).click();
-  await expect(page).toHaveURL(/\/workspace$/);
-}
-
-async function ready(page: Page) {
-  await page.bringToFront();
-  await expect(page.getByRole('application')).toBeVisible({ timeout: 30_000 });
-  await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.snapshot())).toBeTruthy();
-  await expect.poll(() => page.evaluate(() => window.__virtualofficeTest?.network().online)).toBe(true);
-  await page.locator('canvas').click();
-}
-
-async function snapshot(page: Page): Promise<PlayerSnapshot> {
-  const value = await page.evaluate(() => window.__virtualofficeTest?.snapshot());
-  expect(value).toBeTruthy();
-  return value!;
-}
-
-async function hold(page: Page, key: string, duration: number) {
-  await page.keyboard.down(key);
-  await page.waitForTimeout(duration);
-  await page.keyboard.up(key);
-  await expect.poll(async () => {
-    const value = await snapshot(page);
-    return Math.hypot(value.velocityX, value.velocityY);
-  }).toBe(0);
-}
-
-async function travel(page: Page, key: string, reached: (value: PlayerSnapshot) => boolean) {
-  await page.keyboard.down(key);
-  try {
-    await expect.poll(async () => reached(await snapshot(page)), { intervals: [16], timeout: 5_000 }).toBe(true);
-  } finally {
-    await page.keyboard.up(key);
-  }
-}
+import { signIn, ready, snapshot, hold, travel } from './helpers';
 
 test('connexion, apparition, nom, rechargement et démontage du bureau', async ({ page }, testInfo) => {
   const errors: string[] = [];
@@ -196,6 +155,7 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
     await signIn(thomas, 'thomas');
     await ready(thomas);
     await expect(alice.locator('.chat-members')).toContainText('2 participants');
+    await expect(alice.getByRole('status', { name: 'Événements de conversation' })).toContainText('Thomas Bernard a rejoint la conversation.');
     const before = await snapshot(alice);
     await alice.getByLabel('Message au groupe').fill('Bonjour Thomas ! ');
     await alice.getByLabel('Message au groupe').pressSequentially('zqsd f');
@@ -221,6 +181,7 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
     await signIn(julie, 'julie');
     await ready(julie);
     await expect(alice.locator('.chat-members')).toContainText('3 participants');
+    await expect(alice.getByRole('status', { name: 'Événements de conversation' })).toContainText('Julie Dupont a rejoint la conversation.');
     await expect(messages(julie)).not.toContainText('Bonjour Thomas');
     await julie.getByLabel('Message au groupe').fill('Bonjour à vous deux !');
     await julie.getByLabel('Message au groupe').press('Enter');
@@ -237,6 +198,7 @@ test('chat : saisie immobile, messages, séparation, reprise, nouveau groupe et 
     await alice.getByRole('button', { name: 'Quitter le plein écran' }).click();
     await julie.getByRole('button', { name: 'Se déconnecter' }).click();
     await expect(alice.locator('.chat-members')).toContainText('2 participants');
+    await expect(alice.getByRole('status', { name: 'Événements de conversation' })).toContainText('Julie Dupont a quitté la conversation.');
     await expect(messages(alice)).toContainText('Bonjour Thomas');
     await expect(messages(alice)).not.toContainText('Bonjour à vous deux');
   } finally { for (const context of contexts) await context.close(); }

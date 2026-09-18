@@ -3,9 +3,9 @@
 VirtualOffice est un prototype scolaire de bureau virtuel 2D : se connecter,
 retrouver ses collègues, se déplacer et discuter en s'approchant d'un groupe.
 
-**Les parties 1 à 5 sont implémentées** : socle Docker, base PostgreSQL,
+**Les parties 1 à 6 sont implémentées** : socle Docker, base PostgreSQL,
 authentification, bureau 2D multijoueur et chat textuel de proximité sur une carte
-de test. Le nom du projet est **VirtualOffice**.
+de test, puis finitions et validation de la démo. Le nom du projet est **VirtualOffice**.
 
 ## Périmètre de la V1
 
@@ -71,6 +71,12 @@ docker compose down
 
 `docker compose down` conserve les données dans le volume `postgres_data`.
 Après une modification du code, relancer `docker compose up --build`.
+
+Si Docker renvoie `invalid file request Dockerfile` dans un dossier OneDrive,
+utiliser `npm run demo:start` (Node.js et Git nécessaires). Cette commande copie
+les sources courantes dans un dossier temporaire hors du dépôt, construit les
+images puis lance les mêmes services Compose. Les fichiers `.env` ne sont pas
+copiés ; Compose utilise la configuration du dépôt. La copie est nettoyée à la fin.
 
 ## Comptes de démonstration
 
@@ -263,6 +269,32 @@ Pour la démo : connecter Alice et Thomas dans deux onglets, écrire un message,
 Julie ouvre une conversation à trois avec un historique distinct. Le départ de
 Julie restaure la conversation à deux si elle date de moins de cinq minutes.
 
+## Finalisation de la démo — partie 6
+
+Le chat annonce les arrivées et départs avec les noms des participants. Il affiche
+le dernier changement observé dans cet onglet, séparément des messages échangés.
+Ces annonces ne sont pas ajoutées aux historiques et ne révèlent aucun message
+d'un autre groupe. Elles sont effacées lors d'une coupure réseau.
+
+Le [guide de démonstration](docs/DEMO.md) propose un parcours à trois comptes,
+les commandes de lancement et les solutions aux problèmes courants.
+Le [compte rendu de validation](docs/VALIDATION.md) détaille les résultats et leur périmètre.
+La suite de validation couvre aussi les erreurs de connexion, la restauration
+et l'expiration des sessions, plusieurs comptes dans un même navigateur, deux
+groupes distincts, les assets manquants et les tailles d'écran desktop.
+
+Pour lancer toutes les vérifications du code dans l'ordre :
+
+```sh
+npm run verify
+```
+
+Cette commande vérifie TypeScript et Prisma, lance les tests serveur et navigateur,
+puis compile les deux applications. Elle nécessite les mêmes prérequis que les
+tests ci-dessous : `.env`, base migrée et initialisée, dépendances npm et Chromium.
+Le contrôle Docker reste distinct : `docker compose config --quiet`, puis
+`docker compose up --build -d --wait`.
+
 ## Développer en local
 
 Prérequis supplémentaires : Node.js 22.12+ sur la branche 22, ou Node.js 24+,
@@ -335,13 +367,17 @@ npm run test:game
 
 Playwright démarre son propre backend sur **4001** et son client sur **5174** ;
 ces deux ports doivent être libres. Ce bureau de test est séparé de la démo sur 4000.
-Il utilise Alice, Thomas, Julie et le mot de passe `DEMO_PASSWORD` de `.env`. Les huit scénarios
+Il utilise les quatre comptes de démonstration et le mot de passe `DEMO_PASSWORD` de `.env`. Les quinze scénarios
 vérifient la connexion et le démontage du jeu, les touches et diagonales, les
 murs et portes, le mobilier et le focus, les limites, puis la reprise après une
 erreur de chargement, ainsi que deux sessions avec déplacement, rafraîchissement,
 coupure réseau et reconnexion. Le scénario de chat vérifie les échanges à deux
 et à trois, la saisie sans mouvement, l'affichage du HTML comme texte, la reprise
-après séparation et le plein écran.
+après séparation, les annonces de groupe et le plein écran. Les scénarios de
+finalisation vérifient les erreurs de login et de restauration, l'expiration
+côté interface (délai accéléré), les sessions indépendantes dans un même navigateur,
+les raccourcis plein écran, trois tailles de fenêtre, un asset manquant et
+l'isolation des messages de deux groupes formés dans quatre onglets.
 Les résultats et captures sont dans `client/test-results/`
 (ignoré par Git). La lecture des coordonnées de l'avatar est exposée uniquement
 en mode Vite `test`.
@@ -404,7 +440,7 @@ VirtualOffice/
 │   │   ├── types/auth.ts
 │   │   ├── App.tsx
 │   │   └── main.tsx
-│   ├── tests/office.spec.ts
+│   ├── tests/                   # bureau, chat et scénarios de démonstration
 │   ├── playwright.config.ts
 │   ├── Dockerfile
 │   └── vite.config.ts
@@ -426,7 +462,9 @@ VirtualOffice/
 │   ├── Dockerfile
 │   └── prisma.config.ts
 ├── scripts/setup-env.mjs
+├── scripts/start-demo.mjs
 ├── scripts/create-test-map.mjs
+├── docs/DEMO.md
 ├── CREDITS.md
 ├── .env.example
 ├── docker-compose.yml

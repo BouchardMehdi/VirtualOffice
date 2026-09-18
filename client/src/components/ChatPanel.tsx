@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { ChatRequest, ChatResult, ChatState } from '../../../server/src/realtime/protocol';
 
-type Props = { conversation: ChatState; online: boolean; send: (request: ChatRequest) => Promise<ChatResult> };
+type Props = { conversation: ChatState; online: boolean; events: string[]; send: (request: ChatRequest) => Promise<ChatResult> };
 
-export function ChatPanel({ conversation, online, send }: Props) {
+export function ChatPanel({ conversation, online, events, send }: Props) {
   const [draft, setDraft] = useState('');
   const [error, setError] = useState('');
   const [sending, setSending] = useState(false);
@@ -32,6 +32,9 @@ export function ChatPanel({ conversation, online, send }: Props) {
         `${conversation.members.length} participants : ${conversation.members.map(member => member.name).join(', ')}` :
         'Rapproche-toi d’un collègue pour discuter. Les murs bloquent la conversation.'}
     </p>
+    <div className="chat-events" role="status" aria-label="Événements de conversation">
+      {events.map((text, index) => <p key={`${index}-${text}`}>{text}</p>)}
+    </div>
     <div className="chat-messages" role="log" aria-label="Messages du groupe" aria-relevant="additions" ref={log}>
       {conversation?.messages.map(message => <article className="chat-message" key={message.id}>
         <div><strong>{message.name}</strong> <time dateTime={new Date(message.sentAt).toISOString()}>

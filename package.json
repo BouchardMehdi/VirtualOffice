@@ -10,8 +10,10 @@
   },
   "scripts": {
     "setup": "node scripts/setup-env.mjs",
+    "demo:start": "node scripts/start-demo.mjs",
     "test": "npm run test --workspace @virtualoffice/server",
     "test:game": "npm run test:game --workspace @virtualoffice/client",
+    "verify": "npm run typecheck && npm run prisma:validate && npm test && npm run test:game && npm run build",
     "prisma:migrate": "npm run prisma:migrate --workspace @virtualoffice/server",
     "prisma:seed": "npm run prisma:seed --workspace @virtualoffice/server",
     "dev:client": "npm run dev --workspace @virtualoffice/client",
